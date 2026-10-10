@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kessler"
+version = "0.1.0"
+description = "Kessler: find the tipping points that send distributed systems into metastable failure."
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.in"] }
+
+[tool.setuptools.packages.find]
+include = ["kessler*"]
+
+[tool.setuptools.package-data]
+"kessler.spec.templates" = ["*.yaml"]
+"kessler.migrate" = ["versions/*.sql"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+  "integration: needs a running Postgres and Redis (KESSLER_DATABASE_URL / KESSLER_REDIS_URL)",
+  "engine: needs the compiled C++ engine library",
+]
+filterwarnings = ["ignore::DeprecationWarning:opentelemetry.*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "S", "RUF"]
+ignore = ["S101", "S311", "RUF001", "RUF002", "RUF003", "B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+ignore_missing_imports = true
+warn_unused_ignores = true
