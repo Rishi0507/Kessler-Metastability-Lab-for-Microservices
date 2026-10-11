@@ -1,0 +1,34 @@
+name: Catalog behind a cache
+description: >
+  Reads are 95% cache hits and the database is sized for the misses only. Flush the
+  cache and watch whether it can ever warm up again: every refill needs the database,
+  and the database is drowning in misses.
+traffic:
+  rps: 1200
+  entry: api
+  client:
+    timeout: 1s
+services:
+  api:
+    instances: 4
+    concurrency: 64
+    latency: { p50: 1ms, p99: 4ms }
+    lb: p2c
+    calls:
+      - to: cache
+        timeout: 400ms
+        retry: { attempts: 2, base: 10ms, jitter: none }
+  cache:
+    instances: 2
+    concurrency: 128
+    latency: { p50: 0.3ms, p99: 1ms }
+    cache: { hit_ratio: 95%, key_space: 50000, miss_target: db }
+    calls:
+      - to: db
+        timeout: 200ms
+        retry: { attempts: 3, base: 10ms, jitter: none }
+  db:
+    instances: 1
+    concurrency: 8
+    queue: { capacity: 1000 }
+    latency: { p50: 8ms, p99: 25ms }

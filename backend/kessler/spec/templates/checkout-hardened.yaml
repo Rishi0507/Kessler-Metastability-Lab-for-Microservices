@@ -1,0 +1,50 @@
+name: Hardened checkout
+description: >
+  The same checkout path after applying Kessler's recommendations: retries only at the
+  edge, a 10% retry budget everywhere, full jitter, deadline propagation, adaptive LIFO
+  queues with queue timeouts, and circuit breakers on the shared database.
+traffic:
+  rps: 500
+  entry: gateway
+  client:
+    timeout: 1500ms
+    retry: { attempts: 2, base: 100ms, cap: 400ms, jitter: full }
+    budget: 10%
+services:
+  gateway:
+    instances: 3
+    concurrency: 64
+    latency: { p50: 1ms, p99: 4ms }
+    lb: p2c
+    calls:
+      - to: checkout
+        timeout: 800ms
+  checkout:
+    instances: 4
+    concurrency: 24
+    latency: { p50: 3ms, p99: 12ms }
+    lb: p2c
+    queue: { capacity: 200, discipline: adaptive_lifo, timeout: 800ms }
+    calls:
+      - to: inventory
+        timeout: 200ms
+        retry: { attempts: 2, base: 20ms, cap: 100ms, jitter: full }
+        budget: 10%
+      - to: db
+        timeout: 250ms
+        retry: { attempts: 2, base: 20ms, cap: 100ms, jitter: full }
+        budget: 10%
+        breaker: { failure_rate: 50%, window: 10s, open_for: 5s }
+  inventory:
+    instances: 2
+    concurrency: 32
+    latency: { p50: 2ms, p99: 10ms }
+  db:
+    instances: 1
+    concurrency: 10
+    queue: { capacity: 500, discipline: adaptive_lifo, timeout: 250ms }
+    latency: { p50: 5ms, p99: 18ms }
+    contention: { knee: 70%, factor: 2 }
+resilience:
+  deadline_propagation: true
+  cancel_on_timeout: true

@@ -1,0 +1,28 @@
+name: Bursty API with autoscaling
+description: >
+  Traffic follows a daily curve and the api autoscales, but new instances take 90
+  seconds to arrive. Spikes have to be absorbed by headroom and shedding, not by the
+  autoscaler.
+traffic:
+  rps: 800
+  entry: api
+  pattern: { kind: diurnal, amplitude: 30%, period: 10m }
+  client:
+    timeout: 1s
+    retry: { attempts: 2, base: 100ms, jitter: full }
+services:
+  api:
+    instances: 4
+    concurrency: 16
+    latency: { p50: 6ms, p99: 30ms }
+    lb: least_outstanding
+    autoscale: { min: 3, max: 12, target_utilization: 60%, interval: 15s, provision: 90s, cooldown: 3m }
+    calls:
+      - to: search
+        timeout: 300ms
+        retry: { attempts: 2, base: 20ms, jitter: full }
+  search:
+    instances: 4
+    concurrency: 16
+    latency: { p50: 10ms, p99: 60ms }
+    lb: least_outstanding

@@ -1,0 +1,55 @@
+name: Kessler itself
+description: >
+  Kessler's own request path, modelled in Kessler: the web client retries once with
+  jitter under a budget, nginx balances least-connections across three api replicas,
+  the api propagates deadlines and reaches Postgres through PgBouncer's 40-connection pool.
+traffic:
+  rps: 300
+  entry: edge
+  client:
+    timeout: 3s
+    retry: { attempts: 2, base: 200ms, cap: 2s, jitter: full }
+    budget: 10%
+services:
+  edge:
+    description: nginx L7 edge (two replicas behind an L4 balancer)
+    instances: 2
+    concurrency: 1024
+    latency: { p50: 0.2ms, p99: 1ms }
+    lb: least_outstanding
+    calls:
+      - to: api
+        timeout: 2500ms
+  api:
+    description: FastAPI replicas, least_conn upstream
+    instances: 3
+    concurrency: 64
+    latency: { p50: 2ms, p99: 10ms }
+    lb: least_outstanding
+    queue: { capacity: 256, discipline: adaptive_lifo, timeout: 1s }
+    calls:
+      - to: redis
+        timeout: 50ms
+        breaker: { failure_rate: 50%, window: 10s, open_for: 5s }
+      - to: pgbouncer
+        timeout: 800ms
+  redis:
+    instances: 1
+    concurrency: 256
+    latency: { p50: 0.2ms, p99: 1ms }
+  pgbouncer:
+    description: transaction pooling, 40 server connections
+    instances: 1
+    concurrency: 40
+    queue: { capacity: 2000, timeout: 500ms }
+    latency: { p50: 0.1ms, p99: 0.4ms }
+    calls:
+      - to: postgres
+        timeout: 750ms
+  postgres:
+    instances: 1
+    concurrency: 40
+    latency: { p50: 1.5ms, p99: 12ms }
+    contention: { knee: 75%, factor: 3 }
+resilience:
+  deadline_propagation: true

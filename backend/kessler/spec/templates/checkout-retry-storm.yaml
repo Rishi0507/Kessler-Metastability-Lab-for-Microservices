@@ -1,0 +1,41 @@
+name: Checkout with retries everywhere
+description: >
+  A typical three-tier checkout path. Every layer retries on its own, nothing is
+  budgeted, retries are not jittered and queues are deep. Slow the database down and
+  see whether the system comes back on its own.
+traffic:
+  rps: 500
+  entry: gateway
+  client:
+    timeout: 1500ms
+    retry: { attempts: 3, base: 100ms, cap: 400ms, jitter: none }
+services:
+  gateway:
+    instances: 3
+    concurrency: 64
+    latency: { p50: 1ms, p99: 4ms }
+    calls:
+      - to: checkout
+        timeout: 800ms
+        retry: { attempts: 2, base: 50ms, jitter: none }
+  checkout:
+    instances: 4
+    concurrency: 24
+    latency: { p50: 3ms, p99: 12ms }
+    calls:
+      - to: inventory
+        timeout: 200ms
+        retry: { attempts: 3, base: 20ms, cap: 100ms, jitter: none }
+      - to: db
+        timeout: 250ms
+        retry: { attempts: 3, base: 20ms, cap: 100ms, jitter: none }
+  inventory:
+    instances: 2
+    concurrency: 32
+    latency: { p50: 2ms, p99: 10ms }
+  db:
+    instances: 1
+    concurrency: 10
+    queue: { capacity: 2000 }
+    latency: { p50: 5ms, p99: 18ms }
+    contention: { knee: 70%, factor: 2 }
