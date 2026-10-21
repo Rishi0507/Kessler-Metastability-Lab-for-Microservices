@@ -7,7 +7,7 @@ from fastapi import APIRouter, Query, Request, Response
 from pydantic import BaseModel, Field
 
 from ...errors import ApiError
-from ...spec import check
+from ...spec import PatchError, apply_patch, check
 from ...spec.templates import all_templates
 from ..common import JSON, decode_cursor, encode_cursor, etag_for_version, log_activity, parse_if_match
 from ..deps import Ctx, IfMatch, IfNoneMatch, MinLsn, User, limit, parse_uuid
@@ -63,6 +63,21 @@ async def templates() -> Response:
 async def check_spec(body: CheckIn, user: User, ctx: Ctx) -> dict[str, Any]:
     await limit(ctx, "read", user.user_id)
     return check(body.yaml)
+
+
+class ApplyIn(BaseModel):
+    yaml: str = Field(max_length=64 * 1024)
+    ops: list[dict[str, Any]] = Field(max_length=50)
+
+
+@router.post("/specs/apply")
+async def apply_fix(body: ApplyIn, user: User, ctx: Ctx) -> dict[str, Any]:
+    await limit(ctx, "read", user.user_id)
+    try:
+        new_yaml = apply_patch(body.yaml, body.ops)
+    except PatchError as exc:
+        raise ApiError(422, "bad_patch", str(exc)) from None
+    return {"yaml": new_yaml, "check": check(new_yaml)}
 
 
 @router.get("/systems")

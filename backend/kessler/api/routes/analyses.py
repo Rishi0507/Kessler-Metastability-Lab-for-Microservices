@@ -332,6 +332,11 @@ def cells_view(params: SweepParams, tasks: list[Any]) -> list[dict[str, Any]]:
             "seeds_done": len(done),
             "seeds_total": params.seeds,
             "cached": sum(1 for t in ts if t["cached"]),
+            "summaries": [
+                {**t["summary"], "seed": t["seed_index"]}
+                for t in ts
+                if t["status"] in ("done", "failed") and t["summary"]
+            ],
         }
         if len(done) == params.seeds:
             entry["aggregate"] = aggregate_cell(done)

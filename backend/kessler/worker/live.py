@@ -151,6 +151,9 @@ class LiveRun:
                     sent = float(fields.get(b"ts", b"0") or 0)
                     if cmd.get("op") == "stop":
                         stop = True
+                        await self._emit(
+                            {"type": "ack", "req": req, "ok": True, "error": None, "sim_time": sim.now, "command": cmd}
+                        )
                         continue
                     ok, err = True, None
                     try:
