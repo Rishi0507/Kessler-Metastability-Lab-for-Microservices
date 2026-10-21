@@ -23,7 +23,18 @@ def main() -> None:
     setup_logging("worker", s.log_level)
     setup_tracing("worker", s.otlp_endpoint)
     start_http_server(args.metrics_port, addr="127.0.0.1" if s.env == "dev" else "0.0.0.0")  # noqa: S104
-    asyncio.run(Worker(s).run())
+    import signal
+
+    def _graceful(*_: object) -> None:
+        raise KeyboardInterrupt
+
+    for sig in (signal.SIGTERM, getattr(signal, "SIGBREAK", None)):
+        if sig is not None:
+            signal.signal(sig, _graceful)
+    try:
+        asyncio.run(Worker(s).run())
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == "__main__":
