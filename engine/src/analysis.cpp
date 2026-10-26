@@ -50,6 +50,16 @@ double worst_case_s(const Spec& spec, int s) {
   return t;
 }
 
+double contention_peak(const ServiceSpec& ss) {
+  if (ss.contention_factor <= 0) return 1.0;
+  return std::max(ss.contention_knee, 1.0 / (1.0 + ss.contention_factor));
+}
+
+bool contention_bistable(const ServiceSpec& ss) {
+  const double k = ss.contention_knee, f = ss.contention_factor;
+  return f > 0 && k < 1.0 && f * k / (1.0 - k) > 1.0;
+}
+
 }
 
 std::string static_analysis_json(const Spec& spec) {
@@ -83,7 +93,7 @@ std::string static_analysis_json(const Spec& spec) {
   std::vector<double> capacity(n, 0.0);
   for (size_t s = 0; s < n; ++s) {
     if (hold[s] <= 0) continue;
-    capacity[s] = spec.services[s].instances * spec.services[s].concurrency / hold[s];
+    capacity[s] = spec.services[s].instances * spec.services[s].concurrency / hold[s] * contention_peak(spec.services[s]);
     if (visits[s] > 0) {
       const double r = capacity[s] / visits[s];
       if (r < max_rps) {
@@ -153,6 +163,11 @@ std::string static_analysis_json(const Spec& spec) {
     w.key("amplification").number(amp[s], 2);
     w.key("cache").boolean(ss.cache.enabled);
     w.key("autoscale").boolean(ss.autoscale.enabled);
+    const bool bistable = contention_bistable(ss);
+    w.key("bistable").boolean(bistable);
+    w.key("collapse_rps").number(
+        bistable && hold[s] > 0 ? ss.instances * ss.concurrency / hold[s] / (1.0 + ss.contention_factor) : 0.0, 2);
+    w.key("contention_knee").number(ss.contention_knee, 3);
     w.end_object();
   }
   w.end_array();
