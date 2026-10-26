@@ -1,0 +1,303 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Activity, Play, Save, Wrench } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, Navigate, useNavigate, useParams } from "react-router";
+import { useSession } from "../app/session";
+import { toast, toastError, useRegisterCommands } from "../app/stores";
+import { SpecEditor, type SpecEditorHandle } from "../components/SpecEditor";
+import { Topology2D } from "../components/Topology2D";
+import { TriggerDialog, type TriggerChoice } from "../components/TriggerDialog";
+import { Grade, SeverityBadge, Skeleton, StatusDot } from "../components/ui";
+import { api, ApiError, newIdempotencyKey, request } from "../lib/api";
+import { fmtAgo, fmtPct } from "../lib/format";
+import type { Analysis, CheckResult, Finding, SystemDetail } from "../lib/types";
+
+function useDebounced<T>(value: T, ms: number): T {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return v;
+}
+
+function FindingsList({ findings, onApply, busy }: { findings: Finding[]; onApply: (f: Finding) => void; busy: boolean }) {
+  if (findings.length === 0) {
+    return <p className="muted">No static risks found. A sweep will show how much headroom you really have.</p>;
+  }
+  return (
+    <ul className="findings">
+      {findings.map((f) => (
+        <li key={f.id} className={`finding sev-${f.severity}-row`}>
+          <div className="row" style={{ justifyContent: "space-between", gap: 8 }}>
+            <h4>{f.title}</h4>
+            <SeverityBadge severity={f.severity} />
+          </div>
+          <p>{f.detail}</p>
+          {f.fix && (
+            <div className="row" style={{ justifyContent: "space-between" }}>
+              <span className="fix muted">{f.fix}</span>
+              {f.patch.length > 0 && (
+                <button className="btn btn-sm" disabled={busy} onClick={() => onApply(f)}>
+                  <Wrench size={14} /> Apply fix
+                </button>
+              )}
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export default function SystemPage() {
+  const { id = "" } = useParams();
+  const { data: user, isLoading: loadingUser } = useSession();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const editor = useRef<SpecEditorHandle>(null);
+  const [draft, setDraft] = useState<string | null>(null);
+  const [triggerOpen, setTriggerOpen] = useState(false);
+
+  const system = useQuery({
+    queryKey: ["system", id],
+    queryFn: () => api.get<SystemDetail>(`/api/v1/systems/${id}`),
+    enabled: !!user,
+  });
+  const analyses = useQuery({
+    queryKey: ["analyses", id],
+    queryFn: () => api.get<{ items: Analysis[] }>(`/api/v1/analyses?system_id=${id}&limit=10`),
+    enabled: !!user,
+  });
+
+  const saved = system.data?.yaml ?? "";
+  const current = draft ?? saved;
+  const dirty = draft !== null && draft !== saved;
+  const debounced = useDebounced(current, 350);
+  const check = useQuery({
+    queryKey: ["check", debounced],
+    queryFn: () => api.post<CheckResult>("/api/v1/specs/check", { yaml: debounced }),
+    enabled: !!user && debounced.length > 0,
+    placeholderData: (prev) => prev,
+    staleTime: Infinity,
+  });
+  const live: CheckResult | undefined = check.data;
+  const findings = (live?.ok ? live.findings : system.data?.checks.findings) ?? [];
+  const score = (live?.ok ? live.score : system.data?.checks.score) ?? null;
+  const topo = (live?.ok ? live.topology : system.data?.checks.topology) ?? undefined;
+  const issues = live && !live.ok ? live.errors : [];
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const r = await request<SystemDetail>("PUT", `/api/v1/systems/${id}`, {
+        body: { yaml: current },
+        ifMatch: `"v${system.data?.latest_version}"`,
+      });
+      return r.data;
+    },
+    onSuccess: (s) => {
+      qc.setQueryData(["system", id], s);
+      setDraft(null);
+      void qc.invalidateQueries({ queryKey: ["systems"] });
+      toast(`Saved as version ${s.version}`);
+    },
+    onError: (e) => {
+      const err = e as ApiError;
+      if (err.status === 412) toastError(`${err.message}. ${err.detail ?? ""}`);
+      else if (err.status === 422) toastError("Fix the errors in the spec before saving.");
+      else toastError(err.message);
+    },
+  });
+
+  const applyFix = useMutation({
+    mutationFn: (f: Finding) => api.post<{ yaml: string }>("/api/v1/specs/apply", { yaml: current, ops: f.patch }),
+    onSuccess: (r, f) => {
+      editor.current?.setValue(r.yaml);
+      setDraft(r.yaml);
+      toast(`Applied: ${f.fix ?? f.title}. Save to keep it.`);
+    },
+    onError: (e) => toastError((e as Error).message),
+  });
+
+  const startAnalysis = useMutation({
+    mutationFn: (c: TriggerChoice) =>
+      api.post<{ analysis: Analysis }>(
+        "/api/v1/analyses",
+        { system_id: id, trigger: c.trigger, seeds: c.seeds, mode: c.mode },
+        newIdempotencyKey(),
+      ),
+    onSuccess: (r) => {
+      setTriggerOpen(false);
+      navigate(`/analyses/${r.analysis.id}`);
+    },
+    onError: (e) => toastError((e as ApiError).detail ?? (e as Error).message),
+  });
+
+  const startRun = useMutation({
+    mutationFn: () => api.post<{ run: { id: string } }>("/api/v1/runs", { system_id: id, load: 1, speed: 4 }, newIdempotencyKey()),
+    onSuccess: (r) => navigate(`/runs/${r.run.id}`),
+    onError: (e) => toastError((e as ApiError).detail ?? (e as Error).message),
+  });
+
+  const onRunSweep = useCallback(() => {
+    if (dirty) {
+      toastError("Save your changes first: analyses run on a saved version.");
+      return;
+    }
+    setTriggerOpen(true);
+  }, [dirty]);
+
+  useRegisterCommands("system", [
+    { id: "sweep", group: "This system", label: "Find tipping points", hint: "run a sweep", run: onRunSweep },
+    { id: "live", group: "This system", label: "Watch it live", hint: "start a live run", run: () => startRun.mutate() },
+    { id: "save", group: "This system", label: "Save changes", run: () => save.mutate() },
+    ...findings
+      .filter((f) => f.patch.length)
+      .slice(0, 6)
+      .map((f) => ({ id: `fix-${f.id}`, group: "Fixes", label: `Apply: ${f.fix ?? f.title}`, run: () => applyFix.mutate(f) })),
+  ]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (dirty) save.mutate();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dirty, save]);
+
+  const summary = useMemo(() => {
+    const a = live?.ok ? live.analysis : system.data?.checks.analysis;
+    if (!a) return null;
+    return `Saturates at about ${Math.round(a.max_rps)} rps (${a.max_load_multiplier.toFixed(1)}× today's ${Math.round(a.offered_rps)} rps). Bottleneck: ${a.bottleneck}.`;
+  }, [live, system.data]);
+
+  if (!loadingUser && !user) return <Navigate to="/" replace />;
+  if (system.isError) {
+    return (
+      <div className="page">
+        <div className="empty">
+          <h1 className="display">System not found</h1>
+          <Link className="btn" to="/systems">
+            Back to systems
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  const s = system.data;
+
+  return (
+    <div className="page">
+      <div className="crumbs">
+        <Link to="/systems">Systems</Link>
+        <span>/</span>
+        <span>{s?.name ?? "…"}</span>
+      </div>
+      <div className="page-head">
+        <div>
+          <h1 className="display">{s?.name ?? <Skeleton h={34} w={300} />}</h1>
+          {summary && <p className="sub num">{summary}</p>}
+        </div>
+        <div className="spacer" />
+        <button className="btn" onClick={() => startRun.mutate()} disabled={startRun.isPending || !s}>
+          <Activity size={16} /> Watch it live
+        </button>
+        <button className="btn btn-primary" onClick={onRunSweep} disabled={!s || startAnalysis.isPending}>
+          <Play size={16} /> Find tipping points
+        </button>
+      </div>
+
+      <div className="workspace">
+        <div className="editor-frame">
+          <div className="editor-bar">
+            <span className="code">kessler.yaml</span>
+            <span className="faint">v{s?.latest_version ?? " - "}</span>
+            {dirty && <span style={{ color: "var(--slow)" }}>unsaved changes</span>}
+            {issues.length > 0 && <span style={{ color: "var(--meta)" }}>{issues.length} error{issues.length > 1 ? "s" : ""}</span>}
+            <div className="spacer" />
+            <button className="btn btn-sm" disabled={!dirty || save.isPending || issues.length > 0} onClick={() => save.mutate()}>
+              <Save size={14} /> Save
+            </button>
+          </div>
+          {s ? (
+            <SpecEditor ref={editor} value={saved} onChange={setDraft} issues={issues} label="System spec (YAML)" />
+          ) : (
+            <div style={{ padding: 16 }}>
+              <Skeleton h={480} />
+            </div>
+          )}
+        </div>
+
+        <div className="insight">
+          <div className="panel panel-pad grade-card">
+            {score ? <Grade score={score.score} grade={score.grade} /> : <Skeleton h={64} w={64} />}
+            <div>
+              <div className="section-title" style={{ marginBottom: 2 }}>
+                Resilience grade
+              </div>
+              <p className="muted" style={{ fontSize: "var(--t-14)" }}>
+                {findings.length === 0
+                  ? "No static risks. Run a sweep to measure real headroom."
+                  : `${findings.filter((f) => f.severity === "critical" || f.severity === "high").length} serious and ${
+                      findings.filter((f) => f.severity === "medium").length
+                    } moderate risks found without running anything.`}
+              </p>
+            </div>
+          </div>
+          {topo && (
+            <div className="panel panel-pad">
+              <div className="section-title">Call graph</div>
+              <Topology2D topo={topo} findings={findings} />
+            </div>
+          )}
+          <div className="panel panel-pad">
+            <div className="section-title">Risks</div>
+            <FindingsList findings={findings} onApply={(f) => applyFix.mutate(f)} busy={applyFix.isPending} />
+          </div>
+          <div className="panel panel-pad">
+            <div className="section-title">Analyses</div>
+            {(analyses.data?.items ?? []).length === 0 ? (
+              <p className="muted" style={{ fontSize: "var(--t-14)" }}>
+                None yet. "Find tipping points" maps how much load and how big a fault this system can absorb.
+              </p>
+            ) : (
+              <ul className="findings">
+                {analyses.data!.items.map((a) => (
+                  <li key={a.id} className="finding" style={{ paddingLeft: 0 }}>
+                    <Link to={`/analyses/${a.id}`} className="row" style={{ textDecoration: "none", color: "var(--ink)" }}>
+                      <StatusDot status={a.status} />
+                      <span>
+                        v{a.system_version} · {a.params.trigger.kind}
+                        {a.params.trigger.target ? ` on ${a.params.trigger.target}` : ""}
+                        {a.parent_id ? " · fix experiment" : ""}
+                      </span>
+                      <span className="spacer" />
+                      <span className="muted num" style={{ fontSize: "var(--t-14)" }}>
+                        {a.status === "done" && a.result ? `${fmtPct(a.result.safe_fraction)} safe` : a.status}
+                      </span>
+                      <span className="faint" style={{ fontSize: "var(--t-12)" }}>
+                        {fmtAgo(a.created_at)}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <TriggerDialog
+        open={triggerOpen}
+        onClose={() => setTriggerOpen(false)}
+        topo={topo}
+        maxLoad={(live?.ok ? live.analysis?.max_load_multiplier : system.data?.checks.analysis?.max_load_multiplier) ?? 1}
+        busy={startAnalysis.isPending}
+        onSubmit={(c) => startAnalysis.mutate(c)}
+      />
+    </div>
+  );
+}
