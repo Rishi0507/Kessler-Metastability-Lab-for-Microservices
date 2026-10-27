@@ -1,0 +1,11 @@
+.git
+.venv
+.tools
+.cache
+.devdata
+**/node_modules
+**/__pycache__
+**/*.pyc
+web/dist
+engine/build*
+docs
