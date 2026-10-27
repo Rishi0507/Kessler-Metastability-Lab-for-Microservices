@@ -371,6 +371,50 @@ def lint(spec: SystemSpec, analysis: dict[str, Any]) -> list[Finding]:
                     )
                 )
 
+    for name, info in svc_info.items():
+        if not info.get("bistable") or not info.get("reachable", True):
+            continue
+        svc = spec.services[name]
+        collapse = float(info.get("collapse_rps", 0))
+        peak = float(info.get("capacity_rps", 0))
+        arrival = float(info.get("arrival_rps", 0))
+        knee = float(info.get("contention_knee", 0.7))
+        in_band = arrival > collapse
+        want = max(svc.instances + 1, math.ceil(svc.instances * (arrival / max(peak, 1e-9)) / 0.6))
+        out.append(
+            Finding(
+                rule="congestion-collapse",
+                severity="high" if in_band else "medium" if arrival > 0.6 * collapse else "low",
+                title=f"{name} gets slower the busier it is",
+                detail=(
+                    f"Past {knee * 100:.0f}% busy, every {name} request takes longer, so its throughput peaks at about "
+                    f"{peak:.0f} rps and falls to about {collapse:.0f} rps once it is overloaded. "
+                    + (
+                        f"Today it serves {arrival:.0f} rps, inside the band where one burst can tip it into the slow state "
+                        "and keep it there."
+                        if in_band
+                        else f"Today it serves {arrival:.0f} rps; a trigger that pushes it past the knee can leave it stuck "
+                        "in the slow state."
+                    )
+                ),
+                location=name,
+                evidence={"peak_rps": peak, "collapse_rps": collapse, "arrival_rps": arrival, "knee": knee},
+                fix=f"Run {want} instances so normal load stays well below the knee.",
+                patch=[{"op": "set", "path": ["services", name, "instances"], "value": want}]
+                + (
+                    [
+                        {
+                            "op": "set",
+                            "path": ["services", name, "autoscale", "max"],
+                            "value": max(want, svc.autoscale.max),
+                        }
+                    ]
+                    if svc.autoscale
+                    else []
+                ),
+            )
+        )
+
     out.sort(key=lambda f: (_SEVERITY_ORDER[f.severity], f.rule, f.location))
     return out
 

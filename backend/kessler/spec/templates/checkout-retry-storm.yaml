@@ -38,4 +38,4 @@ services:
     concurrency: 10
     queue: { capacity: 2000 }
     latency: { p50: 5ms, p99: 18ms }
-    contention: { knee: 70%, factor: 2 }
+    contention: { knee: 80%, factor: 0.5 }

@@ -44,7 +44,7 @@ services:
     concurrency: 10
     queue: { capacity: 500, discipline: adaptive_lifo, timeout: 250ms }
     latency: { p50: 5ms, p99: 18ms }
-    contention: { knee: 70%, factor: 2 }
+    contention: { knee: 80%, factor: 0.5 }
 resilience:
   deadline_propagation: true
   cancel_on_timeout: true
