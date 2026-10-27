@@ -1,0 +1,69 @@
+groups:
+  - name: kessler-slo
+    rules:
+      - record: kessler:api_error_ratio:rate5m
+        expr: sum(rate(kessler_http_requests_total{status=~"5.."}[5m])) / sum(rate(kessler_http_requests_total[5m]))
+      - record: kessler:api_error_ratio:rate30m
+        expr: sum(rate(kessler_http_requests_total{status=~"5.."}[30m])) / sum(rate(kessler_http_requests_total[30m]))
+      - record: kessler:api_error_ratio:rate1h
+        expr: sum(rate(kessler_http_requests_total{status=~"5.."}[1h])) / sum(rate(kessler_http_requests_total[1h]))
+      - record: kessler:api_error_ratio:rate6h
+        expr: sum(rate(kessler_http_requests_total{status=~"5.."}[6h])) / sum(rate(kessler_http_requests_total[6h]))
+      - record: kessler:api_error_ratio:rate3d
+        expr: sum(rate(kessler_http_requests_total{status=~"5.."}[3d])) / sum(rate(kessler_http_requests_total[3d]))
+
+      - alert: ApiErrorBudgetFastBurn
+        expr: kessler:api_error_ratio:rate1h > (14.4 * 0.001) and kessler:api_error_ratio:rate5m > (14.4 * 0.001)
+        labels: { severity: page }
+        annotations:
+          summary: "API is burning its error budget 14x too fast"
+          description: "At this rate 2% of the 30-day error budget is gone within the hour."
+      - alert: ApiErrorBudgetSlowBurn
+        expr: kessler:api_error_ratio:rate6h > (6 * 0.001) and kessler:api_error_ratio:rate30m > (6 * 0.001)
+        labels: { severity: page }
+        annotations:
+          summary: "API is burning its error budget 6x too fast"
+      - alert: ApiErrorBudgetDrift
+        expr: kessler:api_error_ratio:rate3d > 0.001 and kessler:api_error_ratio:rate6h > 0.001
+        labels: { severity: ticket }
+        annotations:
+          summary: "API error rate is above the SLO on a multi-day window"
+
+  - name: kessler-latency-and-queues
+    rules:
+      - alert: ApiLatencyP99High
+        expr: histogram_quantile(0.99, sum by (le) (rate(kessler_http_request_duration_seconds_bucket{route!~"/api/v1/(specs/check|analyses)"}[10m]))) > 0.3
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: "API p99 latency above 300 ms for 10 minutes"
+      - alert: TimeToFirstInsightSlow
+        expr: histogram_quantile(0.95, sum by (le) (rate(kessler_time_to_first_insight_seconds_bucket[30m]))) > 3
+        for: 15m
+        labels: { severity: ticket }
+        annotations:
+          summary: "p95 time to first analysis result above 3 s"
+      - alert: SimulationBacklogGrowing
+        expr: sum(kessler_queue_depth) > 5000 and deriv(sum(kessler_queue_depth)[10m:1m]) > 0
+        for: 10m
+        labels: { severity: page }
+        annotations:
+          summary: "Simulation backlog is large and still growing: add workers"
+      - alert: LiveFanoutSlow
+        expr: histogram_quantile(0.99, sum by (le) (rate(kessler_ws_fanout_latency_seconds_bucket[5m]))) > 0.15
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: "Live updates take more than 150 ms to reach browsers (p99)"
+      - alert: SchedulerUnfair
+        expr: kessler_fairness_jain_index < 0.8
+        for: 15m
+        labels: { severity: ticket }
+        annotations:
+          summary: "One tenant is getting a disproportionate share of simulation capacity"
+      - alert: ReplicaLagHigh
+        expr: max(kessler_replica_lag_bytes) > 64 * 1024 * 1024
+        for: 5m
+        labels: { severity: ticket }
+        annotations:
+          summary: "Read replica is more than 64 MB of WAL behind (reads fall back to the primary)"
