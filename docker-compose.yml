@@ -1,0 +1,215 @@
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: deploy/docker/backend.Dockerfile
+  image: kessler/backend:local
+  restart: unless-stopped
+  environment: &backend-env
+    KESSLER_ENV: ${KESSLER_ENV:-dev}
+    KESSLER_PUBLIC_URL: http://localhost:8080
+    KESSLER_DATABASE_URL: postgresql://kessler:${POSTGRES_PASSWORD:-kessler}@pgbouncer:6432/kessler
+    KESSLER_DATABASE_REPLICA_URL: postgresql://kessler:${POSTGRES_PASSWORD:-kessler}@postgres-replica:5432/kessler
+    KESSLER_DB_STATEMENT_CACHE_SIZE: "0"
+    KESSLER_REDIS_URL: redis://redis:6379/0
+    KESSLER_JWT_SECRET: ${KESSLER_JWT_SECRET:-dev-only-jwt-secret-change-me}
+    KESSLER_STREAM_SECRET: ${KESSLER_STREAM_SECRET:-dev-only-stream-secret-change-me}
+    KESSLER_TRUSTED_PROXIES: "*"
+    KESSLER_OTLP_ENDPOINT: http://jaeger:4318
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+    redis:
+      condition: service_healthy
+
+x-api-health: &api-health
+  test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:9001/readyz', timeout=2).status == 200 else 1)"]
+  interval: 10s
+  timeout: 3s
+  retries: 5
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kessler
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kessler}
+      POSTGRES_DB: kessler
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicate}
+    command: ["postgres", "-c", "wal_level=replica", "-c", "max_wal_senders=8", "-c", "wal_keep_size=512MB",
+              "-c", "max_connections=200", "-c", "shared_buffers=256MB", "-c", "log_min_duration_statement=250"]
+    volumes:
+      - pg-primary:/var/lib/postgresql/data
+      - ./deploy/postgres/primary-init.sh:/docker-entrypoint-initdb.d/01-replication.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kessler -d kessler"]
+      interval: 5s
+      retries: 20
+
+  postgres-replica:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    user: postgres
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicate}
+    entrypoint: ["/bin/sh", "/replica-entrypoint.sh"]
+    volumes:
+      - pg-replica:/var/lib/postgresql/data
+      - ./deploy/postgres/replica-entrypoint.sh:/replica-entrypoint.sh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kessler -d kessler"]
+      interval: 5s
+      retries: 30
+
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.24.1-p1
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://kessler:${POSTGRES_PASSWORD:-kessler}@postgres:5432/kessler
+      POOL_MODE: transaction
+      AUTH_TYPE: scram-sha-256
+      MAX_CLIENT_CONN: "2000"
+      DEFAULT_POOL_SIZE: "40"
+      MAX_PREPARED_STATEMENTS: "0"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+
+  migrate:
+    <<: *backend
+    restart: "no"
+    command: ["kessler.migrate"]
+    environment:
+      <<: *backend-env
+      KESSLER_DATABASE_URL: postgresql://kessler:${POSTGRES_PASSWORD:-kessler}@postgres:5432/kessler
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api1: &api
+    <<: *backend
+    command: ["kessler.api", "--port", "9001"]
+    environment:
+      <<: *backend-env
+      KESSLER_INSTANCE: api1
+    healthcheck: *api-health
+  api2:
+    <<: *api
+    environment:
+      <<: *backend-env
+      KESSLER_INSTANCE: api2
+  api3:
+    <<: *api
+    environment:
+      <<: *backend-env
+      KESSLER_INSTANCE: api3
+
+  gateway1: &gateway
+    <<: *backend
+    command: ["kessler.gateway", "--port", "9101"]
+    environment:
+      <<: *backend-env
+      KESSLER_INSTANCE: gateway1
+  gateway2:
+    <<: *gateway
+    environment:
+      <<: *backend-env
+      KESSLER_INSTANCE: gateway2
+
+  scheduler1: &scheduler
+    <<: *backend
+    command: ["kessler.scheduler", "--metrics-port", "9201"]
+    environment:
+      <<: *backend-env
+      KESSLER_INSTANCE: scheduler1
+      KESSLER_DATABASE_URL: postgresql://kessler:${POSTGRES_PASSWORD:-kessler}@postgres:5432/kessler
+      KESSLER_DB_STATEMENT_CACHE_SIZE: "256"
+  scheduler2:
+    <<: *scheduler
+    environment:
+      <<: *backend-env
+      KESSLER_INSTANCE: scheduler2
+      KESSLER_DATABASE_URL: postgresql://kessler:${POSTGRES_PASSWORD:-kessler}@postgres:5432/kessler
+      KESSLER_DB_STATEMENT_CACHE_SIZE: "256"
+
+  worker1: &worker
+    <<: *backend
+    command: ["kessler.worker", "--metrics-port", "9301"]
+    environment:
+      <<: *backend-env
+      KESSLER_INSTANCE: worker1
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+  worker2:
+    <<: *worker
+    environment:
+      <<: *backend-env
+      KESSLER_INSTANCE: worker2
+
+  edge1: &edge
+    build:
+      context: .
+      dockerfile: deploy/docker/edge.Dockerfile
+    image: kessler/edge:local
+    restart: unless-stopped
+    depends_on: [api1, api2, api3, gateway1, gateway2]
+  edge2:
+    <<: *edge
+
+  lb:
+    image: kessler/edge:local
+    restart: unless-stopped
+    command: ["nginx", "-c", "/etc/nginx/l4.conf", "-g", "daemon off;"]
+    ports:
+      - "8080:8080"
+    depends_on: [edge1, edge2]
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=15d"]
+    volumes:
+      - ./deploy/prometheus:/etc/prometheus:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    restart: unless-stopped
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on: [prometheus]
+
+  jaeger:
+    image: jaegertracing/jaeger:2.9.0
+    restart: unless-stopped
+    ports:
+      - "16686:16686"
+
+volumes:
+  pg-primary:
+  pg-replica:
+  redis-data:
