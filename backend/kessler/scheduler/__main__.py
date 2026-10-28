@@ -19,7 +19,7 @@ def main() -> None:
     s = get_settings()
     setup_logging("scheduler", s.log_level)
     setup_tracing("scheduler", s.otlp_endpoint)
-    start_http_server(args.metrics_port, addr="127.0.0.1" if s.env == "dev" else "0.0.0.0")  # noqa: S104
+    start_http_server(args.metrics_port, addr=s.host)
     import signal
 
     def _graceful(*_: object) -> None:

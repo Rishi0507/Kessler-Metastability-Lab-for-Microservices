@@ -88,11 +88,12 @@ MaybeUser = Annotated[Principal | None, Depends(optional_principal)]
 def client_ip(request: Request, ctx: AppContext) -> str:
     peer = request.client.host if request.client else "unknown"
     trusted = {p.strip() for p in ctx.settings.trusted_proxies.split(",")}
-    if peer in trusted:
+    trust_all = "*" in trusted
+    if trust_all or peer in trusted:
         xff = request.headers.get("x-forwarded-for", "")
         hops = [h.strip() for h in xff.split(",") if h.strip()]
         for hop in reversed(hops):
-            if hop not in trusted:
+            if trust_all or hop not in trusted:
                 return hop
     return peer
 
