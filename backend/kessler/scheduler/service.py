@@ -10,15 +10,15 @@ import redis.asyncio as aioredis
 from redis.exceptions import ResponseError
 
 from .. import keys
+from ..analysis.planner import SweepParams
 from ..config import Settings
 from ..db import Database
 from ..engine import get_engine
 from ..heartbeat import cancel, heartbeat_loop
 from ..logs import get_logger
-from ..redisio import create_redis
 from ..metrics import FAIRNESS, INFLIGHT_TASKS, QUEUE_DEPTH, QUEUE_WAIT, TIME_TO_FIRST_INSIGHT
+from ..redisio import create_redis
 from .fairshare import WEIGHTS, DeficitRoundRobin, FairnessTracker
-from ..analysis.planner import SweepParams
 from .orchestrator import advance, enqueue, publish, tenant_of
 
 log = get_logger("kessler.scheduler")
@@ -337,7 +337,8 @@ class Scheduler:
             async with self.db.primary_conn() as conn, conn.transaction():
                 a = await conn.fetchrow("SELECT * FROM analyses WHERE id = $1 FOR UPDATE", r["id"])
                 tasks = await conn.fetch(
-                    "SELECT cell, seed_index, task_hash FROM analysis_tasks WHERE analysis_id = $1 AND status = 'pending'",
+                    """SELECT cell, seed_index, task_hash FROM analysis_tasks
+                       WHERE analysis_id = $1 AND status = 'pending'""",
                     r["id"],
                 )
                 params = SweepParams.from_dict(a["params"])
@@ -376,7 +377,8 @@ class Scheduler:
                     await conn.execute("DELETE FROM users WHERE is_guest AND last_seen_at < now() - interval '7 days'")
                     await conn.execute(
                         """DELETE FROM sim_results WHERE task_hash IN (
-                               SELECT task_hash FROM sim_results WHERE last_hit_at < now() - interval '30 days' LIMIT 5000)"""
+                               SELECT task_hash FROM sim_results
+                               WHERE last_hit_at < now() - interval '30 days' LIMIT 5000)"""
                     )
                     await conn.execute("DELETE FROM outbox WHERE published_at < now() - interval '3 days'")
             except Exception:

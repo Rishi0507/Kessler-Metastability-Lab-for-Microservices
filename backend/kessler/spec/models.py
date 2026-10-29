@@ -292,7 +292,7 @@ def _find_cycle(graph: dict[str, list[str]]) -> list[str] | None:
         stack.append(u)
         for v in graph.get(u, []):
             if state.get(v) == 1:
-                return stack[stack.index(v) :] + [v]
+                return [*stack[stack.index(v) :], v]
             if v not in state:
                 found = dfs(v)
                 if found:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import ctypes
 import json
 import os
@@ -199,10 +200,8 @@ class LiveSim:
         self.close()
 
     def __del__(self) -> None:  # pragma: no cover
-        try:
+        with contextlib.suppress(Exception):
             self.close()
-        except Exception:
-            pass
 
 
 _engine: Engine | None = None

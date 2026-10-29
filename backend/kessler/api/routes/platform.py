@@ -125,7 +125,8 @@ SELECT
   (SELECT avg((result->'savings'->>'avoided_fraction')::float) FROM recent WHERE status = 'done') AS avoided_avg,
   (SELECT count(*) FROM runs WHERE status = 'running') AS live_runs,
   (SELECT count(DISTINCT owner_id) FROM recent) AS active_users_24h,
-  (SELECT count(*) FROM analyses WHERE parent_id IS NOT NULL AND created_at > now() - interval '7 days') AS experiments_7d,
+  (SELECT count(*) FROM analyses WHERE parent_id IS NOT NULL
+     AND created_at > now() - interval '7 days') AS experiments_7d,
   (SELECT count(*) FROM analyses WHERE status = 'done' AND parent_id IS NULL
      AND created_at > now() - interval '7 days') AS analyses_done_7d,
   (SELECT avg((c.result->>'safe_fraction')::float - (p.result->>'safe_fraction')::float)
@@ -169,7 +170,7 @@ async def _queues(ctx: AppContext) -> dict[str, Any]:
                     if g["name"].decode() == group:
                         q[field] = int(g.get("pending", 0) or 0) + int(g.get("lag", 0) or 0)
             except Exception:
-                pass
+                q[field] = 0
     except Exception:
         q["error"] = "redis unavailable"
     return q

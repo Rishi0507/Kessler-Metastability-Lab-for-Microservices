@@ -54,12 +54,12 @@ def _line_index(text: str) -> dict[tuple[str, ...], int]:
     def walk(n: Any, path: tuple[str, ...]) -> None:
         if isinstance(n, yaml.MappingNode):
             for k, v in n.value:
-                p = path + (str(k.value),)
+                p = (*path, str(k.value))
                 index[p] = k.start_mark.line + 1
                 walk(v, p)
         elif isinstance(n, yaml.SequenceNode):
             for i, v in enumerate(n.value):
-                p = path + (str(i),)
+                p = (*path, str(i))
                 index[p] = v.start_mark.line + 1
                 walk(v, p)
 
