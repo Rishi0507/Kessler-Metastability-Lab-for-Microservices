@@ -124,6 +124,10 @@ class Database:
     async def current_lsn(self, conn: asyncpg.Connection) -> str:
         return await conn.fetchval("SELECT pg_current_wal_insert_lsn()::text")
 
+    async def fence(self) -> str:
+        async with self.primary_conn() as conn:
+            return await self.current_lsn(conn)
+
     async def refresh_replica_lag(self) -> None:
         if self.replica is None or self.primary is None:
             return
@@ -141,6 +145,15 @@ class Database:
             return await self.primary.fetchval("SELECT 1") == 1
         except Exception:
             return False
+
+
+def newer_lsn(a: str | None, b: str | None) -> str | None:
+    pa, pb = parse_lsn(a), parse_lsn(b)
+    if pa is None:
+        return b if pb is not None else None
+    if pb is None:
+        return a
+    return a if pa >= pb else b
 
 
 def record(row: asyncpg.Record | None) -> dict[str, Any] | None:

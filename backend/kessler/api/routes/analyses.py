@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from ... import keys
 from ...analysis.planner import TRIGGER_DEFAULTS, SweepParams, aggregate_cell, default_params, linspace
+from ...db import newer_lsn
 from ...errors import ApiError
 from ...metrics import ADMISSION_REJECTED, ANALYSES_SUBMITTED
 from ...security import sign_stream_token
@@ -346,10 +347,12 @@ def cells_view(params: SweepParams, tasks: list[Any]) -> list[dict[str, Any]]:
 
 @router.get("/analyses/{analysis_id}")
 async def get_analysis(analysis_id: str, user: User, ctx: Ctx, min_lsn: MinLsn = None) -> dict[str, Any]:
-    row = await _owned_analysis(ctx, user.user_id, analysis_id, min_lsn)
+    aid = parse_uuid(analysis_id, "analysis")
+    last_id = await last_stream_id(ctx, keys.progress_stream(str(aid)))
+    fence = newer_lsn(min_lsn, await ctx.db.fence())
+    row = await _owned_analysis(ctx, user.user_id, analysis_id, fence)
     params = SweepParams.from_dict(row["params"])
-    last_id = await last_stream_id(ctx, keys.progress_stream(str(row["id"])))
-    async with ctx.db.read(min_lsn) as conn:
+    async with ctx.db.read(fence) as conn:
         tasks = await conn.fetch(
             "SELECT cell, seed_index, status, cached, summary FROM analysis_tasks WHERE analysis_id = $1", row["id"]
         )

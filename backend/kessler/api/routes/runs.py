@@ -10,6 +10,7 @@ from fastapi import APIRouter, Response
 from pydantic import BaseModel, Field
 
 from ... import keys
+from ...db import newer_lsn
 from ...errors import ApiError
 from ...tracing import inject
 from ..common import JSON, body_hash, idempotent, log_activity
@@ -111,9 +112,11 @@ async def _owned_run(ctx: Ctx, user_id: str, run_id: str, min_lsn: str | None = 
 
 @router.get("/runs/{run_id}")
 async def get_run(run_id: str, user: User, ctx: Ctx, min_lsn: MinLsn = None) -> dict[str, Any]:
-    row = await _owned_run(ctx, user.user_id, run_id, min_lsn)
-    last_id = await last_stream_id(ctx, keys.run_ticks(str(row["id"])))
-    async with ctx.db.read(min_lsn) as conn:
+    rid = parse_uuid(run_id, "run")
+    last_id = await last_stream_id(ctx, keys.run_ticks(str(rid)))
+    fence = newer_lsn(min_lsn, await ctx.db.fence())
+    row = await _owned_run(ctx, user.user_id, run_id, fence)
+    async with ctx.db.read(fence) as conn:
         cmds = await conn.fetch(
             "SELECT seq, sim_time, command, created_at FROM run_commands WHERE run_id = $1 ORDER BY seq DESC LIMIT 100",
             row["id"],
