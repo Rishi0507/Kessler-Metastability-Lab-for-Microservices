@@ -56,6 +56,11 @@ describe("cell aggregation mirrors the server", () => {
     expect(cellState(a)).toBe("stable");
   });
 
+  it("counts runs that never recovered when taking the median recovery", () => {
+    expect(aggregate([sim("metastable"), sim("metastable"), sim("recovered", 8)])!.recovery_s).toBeNull();
+    expect(aggregate([sim("metastable"), sim("recovered", 3), sim("recovered", 5)])!.recovery_s).toBe(5);
+  });
+
   it("classifies slow recoveries, metastability and overload", () => {
     expect(cellState(aggregate([sim("recovered", 45)])!)).toBe("slow");
     expect(cellState(aggregate([sim("metastable")])!)).toBe("metastable");

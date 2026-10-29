@@ -9,7 +9,7 @@ import { SeverityBadge, Skeleton, StatusDot } from "../components/ui";
 import { api, ApiError, newIdempotencyKey } from "../lib/api";
 import { aggregate, cellState, STATE_LABEL } from "../lib/cells";
 import { axisValue, fmtCount, fmtMult, fmtPct, fmtSeconds, triggerPhrase } from "../lib/format";
-import type { Analysis, AnalysisResult, AnalysisSnapshot, SimSummary, SweepParams } from "../lib/types";
+import type { Analysis, AnalysisResult, AnalysisSnapshot, InferredState, SimSummary, SweepParams } from "../lib/types";
 import { realtime } from "../lib/ws";
 import { Terrain } from "../three/Terrain";
 import { useScene } from "../three/useScene";
@@ -24,9 +24,14 @@ function buildCells(params: SweepParams, seeds: Map<number, Seeds>, planned: Set
     return {
       agg: complete ? aggregate([...s.values()]) : undefined,
       pending: !complete && (planned.has(i) || (s?.size ?? 0) > 0),
-      inferredBad: result?.verdicts?.[i]?.inferred ? result.verdicts[i]!.bad : undefined,
+      inferred: inferredState(result?.verdicts?.[i]),
     };
   });
+}
+
+function inferredState(v: AnalysisResult["verdicts"][number] | undefined): InferredState | undefined {
+  if (!v?.inferred) return undefined;
+  return v.state ?? (v.bad ? "metastable" : "ok");
 }
 
 function useAnalysisStream(id: string, enabled: boolean) {
@@ -100,7 +105,7 @@ function TerrainView({ params, cells }: { params: SweepParams; cells: MapCell[] 
   }, [params.loads]);
   const scene = useScene(host, (el) => new Terrain(el, params.values.length, params.loads.length, todayCol), [params.values.length, params.loads.length]);
   useEffect(() => {
-    scene.current?.update(cells.map((c) => ({ agg: c.agg, pending: c.pending, inferredBad: c.inferredBad })));
+    scene.current?.update(cells.map((c) => ({ agg: c.agg, pending: c.pending, inferred: c.inferred })));
   }, [cells, scene]);
   return (
     <div className="terrain-host" ref={host} role="img" aria-label="3D terrain of the metastability map. Plateaus are combinations that never recover.">
@@ -338,7 +343,7 @@ export default function AnalysisPage() {
                     <dt>Runs that never recovered</dt>
                     <dd>{fmtPct(sel.agg.p_metastable)}</dd>
                     <dt>Median recovery</dt>
-                    <dd>{sel.agg.recovery_s === null ? "none" : fmtSeconds(sel.agg.recovery_s)}</dd>
+                    <dd>{sel.agg.recovery_s === null ? "never (most runs did not recover)" : fmtSeconds(sel.agg.recovery_s)}</dd>
                     <dt>Peak load amplification</dt>
                     <dd>{fmtMult(sel.agg.peak_amplification)}</dd>
                     <dt>Work nobody waited for</dt>
@@ -348,7 +353,15 @@ export default function AnalysisPage() {
                   </dl>
                 </>
               ) : (
-                <p className="muted">{sel.pending ? "Still simulating this combination." : sel.inferredBad !== undefined ? "Not simulated: the outcome follows from its neighbours." : "Not simulated."}</p>
+                <p className="muted">
+                  {sel.pending
+                    ? "Still simulating this combination."
+                    : sel.inferred === "overloaded"
+                      ? "Not simulated: at this load the system is already overloaded before any trigger (found in another row)."
+                      : sel.inferred
+                        ? "Not simulated: the outcome follows from the simulated loads on either side."
+                        : "Not simulated."}
+                </p>
               )}
               <button className="btn" onClick={() => reproduce.mutate(params.loads[selCol] ?? 1)} disabled={reproduce.isPending}>
                 <Activity size={15} /> Reproduce it live

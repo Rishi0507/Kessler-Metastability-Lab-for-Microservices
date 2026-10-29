@@ -1,12 +1,18 @@
 import { cellState, type CellState } from "../lib/cells";
 import { axisValue, fmtMult, fmtSeconds } from "../lib/format";
-import type { CellAggregate, SweepParams } from "../lib/types";
+import type { CellAggregate, InferredState, SweepParams } from "../lib/types";
 
 export interface MapCell {
   agg?: CellAggregate;
   pending: boolean;
-  inferredBad?: boolean | null;
+  inferred?: InferredState;
 }
+
+const INFERRED: Record<InferredState, { cls: string; label: string }> = {
+  ok: { cls: "s-stable", label: "Inferred: recovers" },
+  metastable: { cls: "s-metastable", label: "Inferred: does not recover" },
+  overloaded: { cls: "s-overloaded", label: "Inferred: overloaded before the trigger" },
+};
 
 export function MetastabilityMap({
   params,
@@ -42,9 +48,7 @@ export function MetastabilityMap({
       return { cls: `s-${s}`, label: `${s}${rec}` };
     }
     if (c.pending) return { cls: "s-pending", label: "Simulating" };
-    if (c.inferredBad !== undefined && c.inferredBad !== null) {
-      return { cls: `${c.inferredBad ? "s-metastable" : "s-stable"} inferred`, label: c.inferredBad ? "Inferred: does not recover" : "Inferred: recovers" };
-    }
+    if (c.inferred) return { cls: `${INFERRED[c.inferred].cls} inferred`, label: INFERRED[c.inferred].label };
     return { cls: "s-empty", label: "Not simulated" };
   };
 
@@ -68,7 +72,7 @@ export function MetastabilityMap({
     let x = left + nCols * cellW;
     for (let col = 0; col < nCols; col++) {
       const c = cells[row * nCols + col];
-      const bad = c?.agg ? cellState(c.agg) === "metastable" || cellState(c.agg) === "overloaded" : c?.inferredBad;
+      const bad = c?.agg ? cellState(c.agg) === "metastable" || cellState(c.agg) === "overloaded" : c?.inferred && c.inferred !== "ok";
       if (bad) {
         x = left + col * cellW;
         break;

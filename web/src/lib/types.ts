@@ -182,6 +182,8 @@ export interface AnalysisFindingOut {
   evidence: Record<string, unknown>;
 }
 
+export type InferredState = "ok" | "metastable" | "overloaded";
+
 export interface AnalysisResult {
   safe_cells: number;
   total_cells: number;
@@ -189,7 +191,7 @@ export interface AnalysisResult {
   boundary: { value: number; tipping_load: number | null }[];
   findings: AnalysisFindingOut[];
   savings: { full_grid_sims: number; simulated_sims: number; avoided_fraction: number };
-  verdicts: { bad: boolean; inferred: boolean }[];
+  verdicts: { bad: boolean; inferred: boolean; state?: InferredState }[];
 }
 
 export interface Analysis {

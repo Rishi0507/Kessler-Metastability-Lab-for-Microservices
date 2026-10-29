@@ -1,14 +1,14 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { cellState } from "../lib/cells";
-import type { CellAggregate } from "../lib/types";
+import type { CellAggregate, InferredState } from "../lib/types";
 import { color, disposeAll, makeRenderer } from "./common";
 import type { SceneHandle } from "./useScene";
 
 export interface TerrainCell {
   agg?: CellAggregate;
   pending?: boolean;
-  inferredBad?: boolean | null;
+  inferred?: InferredState;
 }
 
 export class Terrain implements SceneHandle {
@@ -121,9 +121,9 @@ export class Terrain implements SceneHandle {
         else [h, col] = [0.06 + Math.min(0.3, (c.agg.recovery_s ?? 0) / 40), stable];
       } else if (c.pending) {
         [h, col] = [0.12, pending];
-      } else if (c.inferredBad !== undefined && c.inferredBad !== null) {
+      } else if (c.inferred) {
         this.ghostMask[i] = true;
-        [h, col] = [c.inferredBad ? 2.2 : 0.06, c.inferredBad ? meta : stable];
+        [h, col] = c.inferred === "metastable" ? [2.2, meta] : c.inferred === "overloaded" ? [1.6, over] : [0.06, stable];
       }
       this.targets[i] = h;
       this.colorsSolid[i]!.copy(col);

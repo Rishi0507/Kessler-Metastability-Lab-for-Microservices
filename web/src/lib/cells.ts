@@ -8,15 +8,15 @@ export function aggregate(summaries: SimSummary[]): CellAggregate | undefined {
   if (n === 0) return summaries.length ? { ...EMPTY, failed: true } : undefined;
   const bad = ok.filter((s) => BAD.has(s.verdict)).length;
   const recs = ok
-    .map((s) => s.recovery_s)
-    .filter((r): r is number => r !== null && r !== undefined)
+    .map((s) => (BAD.has(s.verdict) || s.recovery_s === null || s.recovery_s === undefined ? Infinity : s.recovery_s))
     .sort((a, b) => a - b);
+  const med = recs[Math.floor(recs.length / 2)] ?? Infinity;
   return {
     seeds: n,
     p_metastable: ok.filter((s) => s.verdict === "metastable").length / n,
     p_overloaded: ok.filter((s) => s.verdict === "overloaded").length / n,
     bad: bad * 2 >= n,
-    recovery_s: recs.length ? (recs[Math.floor(recs.length / 2)] ?? null) : null,
+    recovery_s: Number.isFinite(med) ? med : null,
     peak_amplification: Math.max(...ok.map((s) => s.peak_amplification ?? 0)),
     wasted_fraction: ok.reduce((a, s) => a + (s.wasted_fraction ?? 0), 0) / n,
     min_goodput_ratio: Math.min(...ok.map((s) => s.min_goodput_ratio ?? 0)),
