@@ -47,6 +47,7 @@ python-dotenv==1.2.4
 PyYAML==6.0.3
 redis==8.1.0
 requests==2.34.2
+ruamel.yaml==0.19.1
 ruff==0.17.3
 starlette==1.10.0
 types-PyYAML==6.0.12.20261030

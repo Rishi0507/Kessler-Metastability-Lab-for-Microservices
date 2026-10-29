@@ -5,6 +5,7 @@ pydantic-settings>=2.6
 asyncpg>=0.30
 redis>=5.2
 PyYAML>=6.0
+ruamel.yaml>=0.18
 orjson>=3.10
 argon2-cffi>=23.1
 PyJWT>=2.9

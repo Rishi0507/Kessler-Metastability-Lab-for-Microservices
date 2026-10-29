@@ -4,8 +4,9 @@ from typing import Any
 
 from ..engine import SpecInvalid, get_engine
 from .compiler import CompileResult, SpecIssue, build_engine_spec, canonical_json, compile_text, sha256_hex, task_hash
-from .lint import Finding, PatchError, apply_patch, lint, merge_patches, score
+from .lint import Finding, lint, merge_patches, score
 from .models import SystemSpec
+from .patch import PatchError, apply_patch
 
 __all__ = [
     "CompileResult",

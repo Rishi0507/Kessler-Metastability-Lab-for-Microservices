@@ -142,3 +142,74 @@ def test_applying_all_fixes_improves_the_grade():
     assert after["ok"], after.get("errors")
     assert after["score"]["score"] > before["score"]["score"]
     assert after["system"]["resilience"]["deadline_propagation"] is True
+
+
+def _changed_lines(before: str, after: str) -> list[str]:
+    import difflib
+
+    return [
+        line
+        for line in difflib.unified_diff(before.splitlines(), after.splitlines(), lineterm="", n=0)
+        if line[:1] in "+-" and not line.startswith(("+++", "---"))
+    ]
+
+
+@pytest.mark.parametrize("template", [t.id for t in all_templates()])
+def test_patching_nothing_returns_the_file_unchanged(template):
+    text = get_template(template).yaml
+    assert apply_patch(text, []) == text
+
+
+def test_a_fix_changes_only_the_line_it_is_about():
+    storm = get_template("checkout-retry-storm").yaml
+    fixed = apply_patch(storm, [{"op": "set", "path": ["traffic", "client", "retry", "jitter"], "value": "full"}])
+    assert _changed_lines(storm, fixed) == [
+        "-    retry: { attempts: 3, base: 100ms, cap: 400ms, jitter: none }",
+        "+    retry: { attempts: 3, base: 100ms, cap: 400ms, jitter: full }",
+    ]
+
+
+def test_new_small_mappings_are_written_inline():
+    storm = get_template("checkout-retry-storm").yaml
+    breaker = {"failure_rate": "50%", "window": "10s", "open_for": "5s"}
+    fixed = apply_patch(
+        storm, [{"op": "set", "path": ["services", "checkout", "calls", 1, "breaker"], "value": breaker}]
+    )
+    assert _changed_lines(storm, fixed) == ["+        breaker: { failure_rate: 50%, window: 10s, open_for: 5s }"]
+    spec = compile_text(fixed).spec
+    assert spec is not None and spec.services["checkout"].calls[1].breaker is not None
+
+
+def test_patches_keep_comments_and_other_indentation_styles():
+    text = (
+        "# my checkout\n"
+        "name: mini\n"
+        "traffic: {rps: 100}  # peak\n"
+        "services:\n"
+        "    api:\n"
+        "        concurrency: 8\n"
+        "        calls:\n"
+        "        - to: db\n"
+        "          retry: {attempts: 3}\n"
+        "    db:\n"
+        "        concurrency: 4\n"
+    )
+    assert apply_patch(text, []) == text
+    fixed = apply_patch(
+        text, [{"op": "set", "path": ["services", "api", "calls", 0, "retry", "jitter"], "value": "full"}]
+    )
+    assert _changed_lines(text, fixed) == [
+        "-          retry: {attempts: 3}",
+        "+          retry: {attempts: 3, jitter: full}",
+    ]
+
+
+def test_patching_reports_bad_input_instead_of_crashing():
+    from kessler.spec import PatchError
+
+    with pytest.raises(PatchError, match="not valid YAML"):
+        apply_patch("name: [unclosed\n", [])
+    with pytest.raises(PatchError, match="mapping"):
+        apply_patch("- just a list\n", [])
+    with pytest.raises(PatchError, match="inside a scalar"):
+        apply_patch("name: x\n", [{"op": "set", "path": ["name", "deeper"], "value": 1}])

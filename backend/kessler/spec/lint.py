@@ -4,8 +4,6 @@ import math
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
-import yaml
-
 from .models import SystemSpec
 
 Severity = Literal["critical", "high", "medium", "low", "info"]
@@ -154,7 +152,8 @@ def lint(spec: SystemSpec, analysis: dict[str, Any]) -> list[Finding]:
                     detail=(
                         f"{e['from']} waits {_fmt_ms(e['timeout_ms'])}, but {e['to']} can keep working for up to "
                         f"{_fmt_ms(worst)} while it retries its own dependencies. Everything {e['to']} does after "
-                        f"{e['from']} has given up is wasted, and that wasted work is what keeps a slow dependency busy."
+                        f"{e['from']} has given up is wasted, and that wasted work is what keeps a slow dependency "
+                        "busy."
                     ),
                     location=f"{e['from']} → {e['to']}",
                     evidence={"caller_timeout_ms": e["timeout_ms"], "callee_worst_case_ms": worst},
@@ -242,7 +241,10 @@ def lint(spec: SystemSpec, analysis: dict[str, Any]) -> list[Finding]:
                 ),
                 location=name,
                 evidence={"max_queue_wait_ms": wait, "caller_timeout_ms": timeout},
-                fix=f"Drop requests that waited longer than {_fmt_ms(timeout)} and serve the newest first under pressure.",
+                fix=(
+                    f"Drop requests that waited longer than {_fmt_ms(timeout)} and serve the newest first "
+                    "under pressure."
+                ),
                 patch=[
                     {"op": "set", "path": ["services", name, "queue", "timeout"], "value": f"{timeout:g}ms"},
                     {"op": "set", "path": ["services", name, "queue", "discipline"], "value": "adaptive_lifo"},
@@ -390,11 +392,11 @@ def lint(spec: SystemSpec, analysis: dict[str, Any]) -> list[Finding]:
                     f"Past {knee * 100:.0f}% busy, every {name} request takes longer, so its throughput peaks at about "
                     f"{peak:.0f} rps and falls to about {collapse:.0f} rps once it is overloaded. "
                     + (
-                        f"Today it serves {arrival:.0f} rps, inside the band where one burst can tip it into the slow state "
-                        "and keep it there."
+                        f"Today it serves {arrival:.0f} rps, inside the band where one burst can tip it into the "
+                        "slow state and keep it there."
                         if in_band
-                        else f"Today it serves {arrival:.0f} rps; a trigger that pushes it past the knee can leave it stuck "
-                        "in the slow state."
+                        else f"Today it serves {arrival:.0f} rps; a trigger that pushes it past the knee can leave it "
+                        "stuck in the slow state."
                     )
                 ),
                 location=name,
@@ -423,38 +425,6 @@ def score(findings: list[Finding]) -> dict[str, Any]:
     s = max(0, 100 - sum(_SEVERITY_WEIGHT[f.severity] for f in findings))
     grade = "A" if s >= 90 else "B" if s >= 75 else "C" if s >= 60 else "D" if s >= 40 else "F"
     return {"score": s, "grade": grade}
-
-
-class PatchError(ValueError):
-    pass
-
-
-def apply_patch(yaml_text: str, ops: list[dict[str, Any]]) -> str:
-    doc = yaml.safe_load(yaml_text)
-    if not isinstance(doc, dict):
-        raise PatchError("spec must be a mapping")
-    for op in ops:
-        if op.get("op") != "set":
-            raise PatchError(f"unsupported op {op.get('op')!r}")
-        path = op.get("path") or []
-        if not path or any(p is None for p in path):
-            raise PatchError(f"invalid path {path!r}")
-        node: Any = doc
-        for key in path[:-1]:
-            if isinstance(node, list):
-                if not isinstance(key, int) or not 0 <= key < len(node):
-                    raise PatchError(f"bad index {key!r} in {path!r}")
-                node = node[key]
-            else:
-                if key not in node or node[key] is None:
-                    node[key] = {}
-                node = node[key]
-        last = path[-1]
-        if isinstance(node, list):
-            if not isinstance(last, int) or not 0 <= last < len(node):
-                raise PatchError(f"bad index {last!r} in {path!r}")
-        node[last] = op.get("value")
-    return yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=100)
 
 
 def merge_patches(findings: list[Finding]) -> list[dict[str, Any]]:

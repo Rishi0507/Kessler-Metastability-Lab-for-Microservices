@@ -114,7 +114,7 @@ export default function SystemPage() {
     onSuccess: (r, f) => {
       editor.current?.setValue(r.yaml);
       setDraft(r.yaml);
-      toast(`Applied: ${f.fix ?? f.title}. Save to keep it.`);
+      toast(`Applied: ${(f.fix ?? f.title).replace(/\.$/, "")}. Save to keep it.`);
     },
     onError: (e) => toastError((e as Error).message),
   });
