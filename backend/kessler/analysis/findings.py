@@ -5,6 +5,10 @@ from typing import Any
 from .planner import TRIGGER_DEFAULTS, SweepParams
 
 
+def _x(load: float) -> str:
+    return f"{load:.2f}".rstrip("0").rstrip(".") + "×"
+
+
 def _trigger_phrase(params: SweepParams, value: float) -> str:
     kind = params.trigger["kind"]
     target = params.trigger.get("target")
@@ -37,34 +41,47 @@ def summarize(
     findings: list[dict[str, Any]] = []
 
     tipping = [r for r in boundary_rows if r["tipping_load"] is not None]
-    at_baseline = [r for r in tipping if r["tipping_load"] <= 1.0]
-    if at_baseline:
-        r = min(at_baseline, key=lambda r: r["value"])
+    capacity = min((r["capacity_load"] for r in boundary_rows if r.get("capacity_load") is not None), default=None)
+    worst = min(tipping, key=lambda r: (r["tipping_load"], r["value"])) if tipping else None
+    if worst and worst["tipping_load"] <= 1.0:
         findings.append(
             {
                 "rule": "tips-at-todays-load",
                 "severity": "critical",
-                "title": f"Today's traffic already tips over under {_trigger_phrase(params, r['value'])}",
+                "title": f"Today's traffic already tips over under {_trigger_phrase(params, worst['value'])}",
                 "detail": (
-                    f"At {r['tipping_load']:g}× today's traffic the system does not recover after "
-                    f"{_trigger_phrase(params, r['value'])}: it is still failing {params.observe_s:g} s after the "
+                    f"At {_x(worst['tipping_load'])} today's traffic the system does not recover after "
+                    f"{_trigger_phrase(params, worst['value'])}: it is still failing {params.observe_s:g} s after the "
                     "trigger ended. Production is one incident away from a self-sustaining outage."
                 ),
-                "evidence": r,
+                "evidence": worst,
             }
         )
-    elif tipping:
-        r = min(tipping, key=lambda r: r["value"])
+    elif worst:
         findings.append(
             {
                 "rule": "tipping-point",
-                "severity": "high" if r["tipping_load"] < 1.5 else "medium",
-                "title": f"Tips over at {r['tipping_load']:g}× today's traffic",
+                "severity": "high" if worst["tipping_load"] < 1.5 else "medium",
+                "title": f"Tips over at {_x(worst['tipping_load'])} today's traffic",
                 "detail": (
-                    f"Below {r['tipping_load']:g}× load the system absorbs {_trigger_phrase(params, r['value'])}. "
-                    "Above it, the same trigger leaves the system in a failure state it cannot leave on its own."
+                    f"Below {_x(worst['tipping_load'])} load the system absorbs "
+                    f"{_trigger_phrase(params, worst['value'])}. Above it, the same trigger leaves the system in a "
+                    "failure state it cannot leave on its own."
                 ),
-                "evidence": r,
+                "evidence": worst,
+            }
+        )
+    elif capacity is not None:
+        findings.append(
+            {
+                "rule": "no-tipping-before-capacity",
+                "severity": "info",
+                "title": "Every trigger was absorbed until the system ran out of capacity",
+                "detail": (
+                    f"Below {_x(capacity)} load the system recovered from every trigger size. From {_x(capacity)} it "
+                    "is overloaded before any trigger: a capacity limit, not a metastable failure."
+                ),
+                "evidence": {"capacity_load": capacity},
             }
         )
     else:
@@ -74,14 +91,14 @@ def summarize(
                 "severity": "info",
                 "title": "No tipping point inside the swept range",
                 "detail": (
-                    f"Every combination up to {max(params.loads):g}× load recovered after the trigger ended. "
+                    f"Every combination up to {_x(max(params.loads))} load recovered after the trigger ended. "
                     "Widen the range to find where the boundary is."
                 ),
                 "evidence": {},
             }
         )
 
-    bad = [c for c in cells.values() if c.get("bad")]
+    bad = [c for c in cells.values() if c.get("bad") and float(c.get("p_overloaded") or 0) < 0.5]
     if bad:
         amp = max(c.get("peak_amplification", 0) for c in bad)
         wasted = sum(c.get("wasted_fraction", 0) for c in bad) / len(bad)

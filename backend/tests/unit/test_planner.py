@@ -135,3 +135,78 @@ def test_cell_aggregation_uses_majority_vote():
     assert agg["p_metastable"] == pytest.approx(1 / 3, abs=1e-3)
     assert agg["recovery_s"] == 3.0
     assert agg["peak_amplification"] == 4.2
+
+
+def _run_with_overload(params: SweepParams, oracle) -> tuple[dict[int, bool], set[int]]:
+    evaluated: dict[int, bool | None] = {}
+    over: set[int] = set()
+    while nxt := plan_next(params, evaluated, over):
+        for c in nxt:
+            assert c not in evaluated, "a cell must never be scheduled twice"
+            evaluated[c] = None
+        for c in nxt:
+            bad, overloaded = oracle(*params.coords(c))
+            evaluated[c] = bad
+            if overloaded:
+                over.add(c)
+    assert is_complete(params, evaluated, over)
+    return {c: bool(v) for c, v in evaluated.items()}, over
+
+
+def _oracle(row: int, col: int) -> tuple[bool, bool]:
+    if col >= 7:
+        return True, True
+    return col >= 9 - 2 * row, False
+
+
+def test_overload_found_in_one_row_caps_every_other_row():
+    p = _params()
+    evaluated, over = _run_with_overload(p, _oracle)
+    plain = _run(p, lambda r, c: _oracle(r, c)[0])
+    assert len(evaluated) < len(plain), "knowing the overloaded columns must save simulations"
+    verdicts = infer(p, evaluated, over)
+    for c in range(p.n_cells):
+        row, col = p.coords(c)
+        bad, overloaded = _oracle(row, col)
+        assert verdicts[c]["bad"] == bad
+        expected = "overloaded" if overloaded else "metastable" if bad else "ok"
+        assert verdicts[c]["state"] == expected, (row, col, verdicts[c])
+
+
+def test_boundary_separates_tipping_from_capacity():
+    p = _params()
+    evaluated, over = _run_with_overload(p, _oracle)
+    rows = boundary(p, infer(p, evaluated, over))
+    assert rows[0]["tipping_load"] is None
+    assert rows[0]["capacity_load"] == pytest.approx(p.loads[7])
+    assert rows[2]["tipping_load"] == pytest.approx(p.loads[5])
+    assert all(r["capacity_load"] == pytest.approx(p.loads[7]) for r in rows)
+
+
+def test_inferred_cells_beyond_an_overloaded_column_are_overloaded_not_metastable():
+    p = _params(rows=1, cols=10)
+    evaluated = {0: False, 3: False, 5: False, 6: True, 9: True}
+    v = infer(p, evaluated, overloaded={6, 9})
+    assert [v[c]["state"] for c in (7, 8)] == ["overloaded", "overloaded"]
+    assert v[4]["state"] == "ok" and v[4]["inferred"]
+
+
+def test_median_recovery_counts_runs_that_never_recovered():
+    meta = {"verdict": "metastable", "recovery_s": None}
+    assert aggregate_cell([meta, meta, {"verdict": "recovered", "recovery_s": 8.0}])["recovery_s"] is None
+    agg = aggregate_cell(
+        [meta, {"verdict": "recovered", "recovery_s": 3.0}, {"verdict": "recovered", "recovery_s": 5.0}]
+    )
+    assert agg["recovery_s"] == 5.0
+
+
+def test_findings_distinguish_capacity_limits_and_print_readable_loads():
+    from kessler.analysis.findings import _x, summarize
+
+    assert _x(0.8111) == "0.81×" and _x(2.0) == "2×" and _x(1.25) == "1.25×"
+    p = _params(rows=2, cols=4)
+    verdicts = {
+        c: {"bad": c % 4 == 3, "inferred": False, "state": "overloaded" if c % 4 == 3 else "ok"} for c in range(8)
+    }
+    out = summarize(p, verdicts, {}, boundary(p, verdicts))
+    assert out["findings"][0]["rule"] == "no-tipping-before-capacity"

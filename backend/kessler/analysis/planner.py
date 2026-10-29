@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -127,14 +128,17 @@ def aggregate_cell(summaries: list[dict[str, Any]]) -> dict[str, Any]:
         return {}
     meta = sum(1 for s in summaries if s.get("verdict") == "metastable")
     over = sum(1 for s in summaries if s.get("verdict") == "overloaded")
-    recs = sorted(float(s["recovery_s"]) for s in summaries if s.get("recovery_s") is not None)
-    med = recs[len(recs) // 2] if recs else None
+    recs = sorted(
+        math.inf if s.get("verdict") in BAD_VERDICTS or s.get("recovery_s") is None else float(s["recovery_s"])
+        for s in summaries
+    )
+    med = recs[len(recs) // 2]
     return {
         "seeds": n,
         "p_metastable": round(meta / n, 4),
         "p_overloaded": round(over / n, 4),
         "bad": cell_is_bad(summaries),
-        "recovery_s": med,
+        "recovery_s": None if math.isinf(med) else med,
         "peak_amplification": round(max(float(s.get("peak_amplification") or 0) for s in summaries), 3),
         "wasted_fraction": round(sum(float(s.get("wasted_fraction") or 0) for s in summaries) / n, 4),
         "min_goodput_ratio": round(min(float(s.get("min_goodput_ratio") or 0) for s in summaries), 4),
@@ -142,14 +146,23 @@ def aggregate_cell(summaries: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def row_next(n: int, ev: dict[int, bool | None]) -> list[int]:
+def overloaded_cells(aggregates: dict[int, dict[str, Any]]) -> set[int]:
+    return {c for c, a in aggregates.items() if float(a.get("p_overloaded") or 0) >= 0.5}
+
+
+def overloaded_from(params: SweepParams, overloaded: Iterable[int]) -> int | None:
+    cols = [params.coords(c)[1] for c in overloaded]
+    return min(cols) if cols else None
+
+
+def row_next(n: int, ev: dict[int, bool | None], known_bad: int | None = None) -> list[int]:
     if any(v is None for v in ev.values()):
         return []
-    if n - 1 not in ev:
-        return [n - 1]
-    if ev[n - 1] is False:
+    bad_cols = sorted({c for c, v in ev.items() if v} | ({known_bad} if known_bad is not None else set()))
+    if not bad_cols:
+        if n - 1 not in ev:
+            return [n - 1]
         return []
-    bad_cols = sorted(c for c, v in ev.items() if v)
     b = bad_cols[0]
     goods = [c for c, v in ev.items() if v is False and c < b]
     g = max(goods) if goods else -1
@@ -161,9 +174,16 @@ def row_next(n: int, ev: dict[int, bool | None]) -> list[int]:
     return [(g + b) // 2]
 
 
-def plan_next(params: SweepParams, evaluated: dict[int, bool | None]) -> list[int]:
+def plan_next(params: SweepParams, evaluated: dict[int, bool | None], overloaded: Iterable[int] = ()) -> list[int]:
     if params.mode == "grid":
         return [c for c in range(params.n_cells) if c not in evaluated]
+    if params.n_rows > 1:
+        anchor = params.cell(0, params.n_cols - 1)
+        if anchor not in evaluated:
+            return [anchor]
+        if evaluated[anchor] is None:
+            return []
+    over = overloaded_from(params, overloaded)
     out: list[int] = []
     for row in range(params.n_rows):
         ev = {}
@@ -171,40 +191,56 @@ def plan_next(params: SweepParams, evaluated: dict[int, bool | None]) -> list[in
             c = params.cell(row, col)
             if c in evaluated:
                 ev[col] = evaluated[c]
-        out.extend(params.cell(row, col) for col in row_next(params.n_cols, ev))
+        known = over if over is not None and over not in ev else None
+        out.extend(params.cell(row, col) for col in row_next(params.n_cols, ev, known))
     return out
 
 
-def is_complete(params: SweepParams, evaluated: dict[int, bool | None]) -> bool:
-    return not any(v is None for v in evaluated.values()) and not plan_next(params, evaluated)
+def is_complete(params: SweepParams, evaluated: dict[int, bool | None], overloaded: Iterable[int] = ()) -> bool:
+    return not any(v is None for v in evaluated.values()) and not plan_next(params, evaluated, overloaded)
 
 
-def infer(params: SweepParams, evaluated: dict[int, bool]) -> dict[int, dict[str, Any]]:
+CellState = Literal["ok", "metastable", "overloaded"]
+
+
+def infer(params: SweepParams, evaluated: dict[int, bool], overloaded: Iterable[int] = ()) -> dict[int, dict[str, Any]]:
+    over_cells = set(overloaded)
+    over = overloaded_from(params, over_cells)
+    over_col = over if over is not None else params.n_cols
     out: dict[int, dict[str, Any]] = {}
     for row in range(params.n_rows):
-        cols = {
-            col: evaluated[params.cell(row, col)] for col in range(params.n_cols) if params.cell(row, col) in evaluated
-        }
-        bad_cols = sorted(c for c, v in cols.items() if v)
-        first_bad = bad_cols[0] if bad_cols else params.n_cols
+        cols = {}
+        for col in range(params.n_cols):
+            if params.cell(row, col) in evaluated:
+                cols[col] = evaluated[params.cell(row, col)]
+        meta = sorted(c for c, v in cols.items() if v and c < over_col and params.cell(row, c) not in over_cells)
+        first_meta = meta[0] if meta else over_col
         for col in range(params.n_cols):
             c = params.cell(row, col)
             if col in cols:
-                out[c] = {"bad": cols[col], "inferred": False}
+                bad = bool(cols[col])
+                state: CellState = "overloaded" if c in over_cells else "metastable" if bad else "ok"
+                out[c] = {"bad": bad, "inferred": False, "state": state}
+            elif col >= over_col:
+                out[c] = {"bad": True, "inferred": True, "state": "overloaded"}
+            elif col >= first_meta:
+                out[c] = {"bad": True, "inferred": True, "state": "metastable"}
             else:
-                out[c] = {"bad": col >= first_bad, "inferred": True}
+                out[c] = {"bad": False, "inferred": True, "state": "ok"}
     return out
 
 
 def boundary(params: SweepParams, verdicts: dict[int, dict[str, Any]]) -> list[dict[str, Any]]:
     rows = []
     for row in range(params.n_rows):
-        tip = None
+        tip = cap = None
         for col in range(params.n_cols):
-            if verdicts.get(params.cell(row, col), {}).get("bad"):
+            st = verdicts.get(params.cell(row, col), {}).get("state")
+            if st == "metastable" and tip is None and cap is None:
                 tip = params.loads[col]
-                break
-        rows.append({"value": params.values[row], "tipping_load": tip})
+            if st == "overloaded" and cap is None:
+                cap = params.loads[col]
+        rows.append({"value": params.values[row], "tipping_load": tip, "capacity_load": cap})
     return rows
 
 
@@ -253,8 +289,10 @@ class PlanState:
     params: SweepParams
     evaluated: dict[int, bool | None] = field(default_factory=dict)
 
+    overloaded: set[int] = field(default_factory=set)
+
     def next_cells(self) -> list[int]:
-        return plan_next(self.params, self.evaluated)
+        return plan_next(self.params, self.evaluated, self.overloaded)
 
     def complete(self) -> bool:
-        return is_complete(self.params, self.evaluated)
+        return is_complete(self.params, self.evaluated, self.overloaded)

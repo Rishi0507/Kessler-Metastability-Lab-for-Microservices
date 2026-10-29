@@ -15,6 +15,7 @@ from ..analysis.planner import (
     boundary,
     cell_is_bad,
     infer,
+    overloaded_cells,
     plan_next,
     savings,
 )
@@ -77,8 +78,8 @@ async def schedule_more(
     events: list[dict[str, Any]] = []
     tenant = tenant_of(int(a["priority"]), str(a["owner_id"]))
     for _ in range(params.n_cells + 1):
-        evaluated, _ = await cell_states(conn, a["id"], params)
-        nxt = plan_next(params, evaluated)
+        evaluated, aggs = await cell_states(conn, a["id"], params)
+        nxt = plan_next(params, evaluated, overloaded_cells(aggs))
         if not nxt:
             return all(v is not None for v in evaluated.values()), events
         tasks = []
@@ -159,7 +160,7 @@ async def schedule_more(
 async def finalize(conn: asyncpg.Connection, a: asyncpg.Record) -> dict[str, Any] | None:
     params = SweepParams.from_dict(a["params"])
     evaluated, aggs = await cell_states(conn, a["id"], params)
-    verdicts = infer(params, {c: bool(v) for c, v in evaluated.items()})
+    verdicts = infer(params, {c: bool(v) for c, v in evaluated.items()}, overloaded_cells(aggs))
     rows = boundary(params, verdicts)
     summary = summarize(params, verdicts, aggs, rows)
     sav = savings(params, len(evaluated))
