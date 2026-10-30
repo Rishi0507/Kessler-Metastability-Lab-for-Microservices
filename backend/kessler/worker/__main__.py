@@ -3,6 +3,25 @@ from __future__ import annotations
 import argparse
 import asyncio
 import os
+import sys
+
+
+def lower_priority(nice: int) -> None:
+    if nice <= 0:
+        return
+    if sys.platform == "win32":
+        import ctypes
+        from ctypes import wintypes
+
+        below_normal, idle = 0x4000, 0x40
+        k = ctypes.WinDLL("kernel32", use_last_error=True)
+        k.GetCurrentProcess.restype = wintypes.HANDLE
+        k.SetPriorityClass.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+        k.SetPriorityClass.restype = wintypes.BOOL
+        if not k.SetPriorityClass(k.GetCurrentProcess(), idle if nice >= 15 else below_normal):
+            raise OSError(ctypes.get_last_error(), "SetPriorityClass failed")
+    else:
+        os.nice(nice)
 
 
 def main() -> None:
@@ -20,6 +39,7 @@ def main() -> None:
     from .service import Worker
 
     s = get_settings()
+    lower_priority(s.worker_nice)
     setup_logging("worker", s.log_level)
     setup_tracing("worker", s.otlp_endpoint)
     start_http_server(args.metrics_port, addr=s.host)

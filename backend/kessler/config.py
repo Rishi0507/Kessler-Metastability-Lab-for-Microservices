@@ -41,6 +41,7 @@ class Settings(BaseSettings):
 
     worker_threads: int = Field(default_factory=lambda: os.cpu_count() or 2)
     worker_live_slots: int = 8
+    worker_nice: int = Field(default=10, ge=0, le=19)
     live_tick_s: float = 0.25
     task_claim_idle_s: float = 30.0
     task_max_deliveries: int = 5
