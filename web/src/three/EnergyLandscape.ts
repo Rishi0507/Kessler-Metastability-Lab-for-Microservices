@@ -17,6 +17,8 @@ function slope(x: number): number {
 
 export type HeroPhase = "resting" | "small-push" | "recovered" | "big-push" | "stuck";
 
+const TRAIL_MAX = 160;
+
 export class EnergyLandscape implements SceneHandle {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
@@ -24,7 +26,8 @@ export class EnergyLandscape implements SceneHandle {
   private surface: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
   private ball: THREE.Mesh;
   private trail: THREE.Line;
-  private trailPts: THREE.Vector3[] = [];
+  private trailBuf = new Float32Array(TRAIL_MAX * 3);
+  private trailLen = 0;
   private x = W1.x;
   private v = 0;
   private clock = 0;
@@ -83,10 +86,17 @@ export class EnergyLandscape implements SceneHandle {
       new THREE.MeshStandardMaterial({ color: color("--accent"), roughness: 0.35, metalness: 0.1 }),
     );
     this.scene.add(this.ball);
+    const trailGeo = new THREE.BufferGeometry();
+    trailGeo.setAttribute(
+      "position",
+      new THREE.BufferAttribute(this.trailBuf, 3).setUsage(THREE.DynamicDrawUsage),
+    );
+    trailGeo.setDrawRange(0, 0);
     this.trail = new THREE.Line(
-      new THREE.BufferGeometry(),
+      trailGeo,
       new THREE.LineBasicMaterial({ color: color("--accent"), transparent: true, opacity: 0.55 }),
     );
+    this.trail.frustumCulled = false;
     this.scene.add(this.trail);
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.9));
     const sun = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -139,15 +149,26 @@ export class EnergyLandscape implements SceneHandle {
       this.cycle += 1;
       this.x = W1.x;
       this.v = 0;
-      this.trailPts = [];
+      this.trailLen = 0;
+      this.trail.geometry.setDrawRange(0, 0);
       this.setPhase("resting");
     }
     this.place();
-    if (this.phase !== "resting") {
-      this.trailPts.push(this.ball.position.clone().add(new THREE.Vector3(0, -0.06, 0)));
-      if (this.trailPts.length > 160) this.trailPts.shift();
-      this.trail.geometry.setFromPoints(this.trailPts);
-    }
+    if (this.phase !== "resting") this.extendTrail();
+  }
+
+  private extendTrail() {
+    const buf = this.trailBuf;
+    if (this.trailLen === TRAIL_MAX) buf.copyWithin(0, 3);
+    else this.trailLen += 1;
+    const i = (this.trailLen - 1) * 3;
+    const p = this.ball.position;
+    buf[i] = p.x;
+    buf[i + 1] = p.y - 0.06;
+    buf[i + 2] = p.z;
+    const geo = this.trail.geometry;
+    (geo.getAttribute("position") as THREE.BufferAttribute).needsUpdate = true;
+    geo.setDrawRange(0, this.trailLen);
   }
 
   frame(dt: number, time: number): void {

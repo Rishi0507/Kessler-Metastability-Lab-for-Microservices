@@ -37,13 +37,14 @@ export function TriggerDialog({
   const caches = services.filter((n) => n.kind === "cache");
   const defaultTarget = topo?.bottleneck && topo.bottleneck !== topo.entry ? topo.bottleneck : services.at(-1)?.id;
   const [kind, setKind] = useState("latency");
-  const [target, setTarget] = useState<string | undefined>(defaultTarget);
+  const [target, setTarget] = useState<string | undefined>();
   const [duration, setDuration] = useState(20);
   const [seeds, setSeeds] = useState(3);
   const [mode, setMode] = useState<"adaptive" | "grid">("adaptive");
   const meta = KINDS.find((k) => k.kind === kind)!;
   const targets = kind === "cache_flush" ? caches : services;
-  const effTarget = meta.needsTarget ? (targets.some((t) => t.id === target) ? target : targets[0]?.id) : undefined;
+  const pick = (id: string | undefined) => (id && targets.some((t) => t.id === id) ? id : undefined);
+  const effTarget = meta.needsTarget ? (pick(target) ?? pick(defaultTarget) ?? targets[0]?.id) : undefined;
   const sims = useMemo(() => {
     const rows = kind === "cache_flush" ? 1 : 6;
     return mode === "grid" ? rows * 10 * seeds : rows * 6 * seeds;
