@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { create } from "zustand";
 import { api, ApiError } from "../lib/api";
 import type { User } from "../lib/types";
+
+export const useAfterSignIn = create<{ path: string | null; set: (path: string | null) => void }>((set) => ({
+  path: null,
+  set: (path) => set({ path }),
+}));
 
 export function useSession() {
   return useQuery({

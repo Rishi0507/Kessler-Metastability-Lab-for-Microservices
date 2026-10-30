@@ -1,13 +1,14 @@
 import { lazy, Suspense } from "react";
 import { Navigate } from "react-router";
-import { useSession } from "../app/session";
+import { useAfterSignIn, useSession } from "../app/session";
 
 const Landing = lazy(() => import("./Landing"));
 
 export function Home() {
   const { data: user, isLoading } = useSession();
+  const next = useAfterSignIn((s) => s.path);
   if (isLoading) return null;
-  if (user) return <Navigate to="/systems" replace />;
+  if (user) return <Navigate to={next ?? "/systems"} replace />;
   return (
     <Suspense fallback={null}>
       <Landing />

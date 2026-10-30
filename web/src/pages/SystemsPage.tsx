@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
-import { useSession } from "../app/session";
+import { useAfterSignIn, useSession } from "../app/session";
 import { toastError, useRegisterCommands } from "../app/stores";
 import { Dialog, Skeleton } from "../components/ui";
 import { api } from "../lib/api";
@@ -53,7 +53,7 @@ export default function SystemsPage() {
   const { data: user, isLoading: loadingUser } = useSession();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [picking, setPicking] = useState(false);
   const started = useRef(false);
 
@@ -80,12 +80,12 @@ export default function SystemsPage() {
   useEffect(() => {
     const start = params.get("start");
     if (!start || started.current || !user || !templates.data) return;
+    started.current = true;
+    setParams({}, { replace: true });
+    useAfterSignIn.getState().set(null);
     const t = templates.data.templates.find((x) => x.id === start);
-    if (t) {
-      started.current = true;
-      create.mutate({ yaml: t.yaml, id: t.id });
-    }
-  }, [params, user, templates.data, create]);
+    if (t) create.mutate({ yaml: t.yaml, id: t.id });
+  }, [params, setParams, user, templates.data, create]);
 
   useRegisterCommands("systems", [
     { id: "new-system", group: "Systems", label: "New system from an example", run: () => setPicking(true) },

@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
-import { useNavigate } from "react-router";
-import { useGuestSignIn } from "../app/session";
+import { useAfterSignIn, useGuestSignIn } from "../app/session";
 import { toastError, useCommands } from "../app/stores";
 import { EnergyLandscape, type HeroPhase } from "../three/EnergyLandscape";
 import { useScene } from "../three/useScene";
@@ -22,16 +21,17 @@ export default function Landing() {
     return s;
   });
   const guest = useGuestSignIn();
-  const navigate = useNavigate();
+  const setNext = useAfterSignIn((s) => s.set);
   const setAuthOpen = useCommands((s) => s.setAuthOpen);
 
-  const tryIt = async () => {
-    try {
-      await guest.mutateAsync();
-      navigate("/systems?start=checkout-retry-storm");
-    } catch (e) {
-      toastError((e as Error).message);
-    }
+  const tryIt = () => {
+    setNext("/systems?start=checkout-retry-storm");
+    guest.mutate(undefined, {
+      onError: (e) => {
+        setNext(null);
+        toastError(e.message);
+      },
+    });
   };
 
   return (
