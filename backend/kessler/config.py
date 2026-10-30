@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     db_command_timeout_s: float = 10.0
     redis_url: str = "redis://127.0.0.1:6380/0"
 
-    jwt_secret: SecretStr = SecretStr("dev-only-jwt-secret-change-me")
+    jwt_secret: SecretStr = SecretStr("dev-only-jwt-secret-change-me-locally")
     stream_secret: SecretStr = SecretStr("dev-only-stream-secret-change-me")
     access_ttl_s: int = 900
     refresh_ttl_s: int = 30 * 86_400
@@ -54,8 +54,11 @@ class Settings(BaseSettings):
     def _production_guards(self) -> Settings:
         if self.env == "prod":
             for name in ("jwt_secret", "stream_secret"):
-                if getattr(self, name).get_secret_value().startswith("dev-only"):
+                value = getattr(self, name).get_secret_value()
+                if value.startswith("dev-only"):
                     raise ValueError(f"KESSLER_{name.upper()} must be set in production")
+                if len(value.encode()) < 32:
+                    raise ValueError(f"KESSLER_{name.upper()} must be at least 32 bytes")
             if not self.cookie_secure:
                 raise ValueError("KESSLER_COOKIE_SECURE must be true in production")
         return self

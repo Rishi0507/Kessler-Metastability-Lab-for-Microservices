@@ -11,7 +11,7 @@ x-backend: &backend
     KESSLER_DATABASE_REPLICA_URL: postgresql://kessler:${POSTGRES_PASSWORD:-kessler}@postgres-replica:5432/kessler
     KESSLER_DB_STATEMENT_CACHE_SIZE: "0"
     KESSLER_REDIS_URL: redis://redis:6379/0
-    KESSLER_JWT_SECRET: ${KESSLER_JWT_SECRET:-dev-only-jwt-secret-change-me}
+    KESSLER_JWT_SECRET: ${KESSLER_JWT_SECRET:-dev-only-jwt-secret-change-me-locally}
     KESSLER_STREAM_SECRET: ${KESSLER_STREAM_SECRET:-dev-only-stream-secret-change-me}
     KESSLER_TRUSTED_PROXIES: "*"
     KESSLER_OTLP_ENDPOINT: http://jaeger:4318

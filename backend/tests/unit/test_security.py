@@ -33,7 +33,7 @@ def test_access_token_round_trip_and_tamper_detection():
     p = decode_access_token(S, tok)
     assert p is not None and p.user_id == "u-1" and p.handle == "ada" and not p.guest
     assert decode_access_token(S, tok[:-2] + ("A" if tok[-2] != "A" else "B") + tok[-1]) is None
-    other = Settings(jwt_secret="another-secret-value")
+    other = Settings(jwt_secret="another-secret-value-for-the-tamper-test")
     assert decode_access_token(other, tok) is None
 
 
