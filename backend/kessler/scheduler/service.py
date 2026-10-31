@@ -16,7 +16,7 @@ from ..db import Database
 from ..engine import get_engine
 from ..heartbeat import cancel, heartbeat_loop, supervise
 from ..logs import get_logger
-from ..metrics import FAIRNESS, INFLIGHT_TASKS, QUEUE_DEPTH, QUEUE_WAIT, TIME_TO_FIRST_INSIGHT
+from ..metrics import FAIRNESS, INFLIGHT_TASKS, QUEUE_DEPTH, QUEUE_WAIT, SCHEDULER_LEADER, TIME_TO_FIRST_INSIGHT
 from ..redisio import create_redis
 from .fairshare import WEIGHTS, DeficitRoundRobin, FairnessTracker
 from .orchestrator import advance, enqueue, publish, tenant_of
@@ -64,7 +64,8 @@ class Scheduler:
         try:
             if self._lock_conn is None or self._lock_conn.is_closed():
                 self._lock_conn = await asyncpg.connect(
-                    self.s.database_url, server_settings={"application_name": "kessler-scheduler-lock"}
+                    self.s.database_url,
+                    server_settings={"application_name": f"kessler-scheduler-lock:{self.s.instance}"[:63]},
                 )
             return bool(await self._lock_conn.fetchval("SELECT pg_try_advisory_lock($1)", LEADER_LOCK))
         except (OSError, asyncpg.PostgresError) as exc:
@@ -93,6 +94,7 @@ class Scheduler:
                     if await self._try_lead():
                         self.leader = True
                         self.stats["leader"] = 1
+                        SCHEDULER_LEADER.set(1)
                         log.info("became leader", extra={"instance": self.s.instance})
                         self._tasks = [
                             asyncio.create_task(self._guard(self._outbox_loop, "outbox")),
@@ -109,6 +111,7 @@ class Scheduler:
                     log.warning("lost leadership", extra={"instance": self.s.instance})
                     self.leader = False
                     self.stats["leader"] = 0
+                    SCHEDULER_LEADER.set(0)
                     await cancel(*self._tasks)
                     self._tasks = []
                     if self._lock_conn is not None:

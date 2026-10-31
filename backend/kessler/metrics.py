@@ -32,6 +32,9 @@ QUEUE_WAIT = Histogram("kessler_queue_wait_seconds", "Task enqueue -> start", ["
 QUEUE_DEPTH = Gauge("kessler_queue_depth", "Tasks waiting in tenant queues", ["priority"])
 INFLIGHT_TASKS = Gauge("kessler_inflight_tasks", "Tasks dispatched to workers and not yet acknowledged")
 FAIRNESS = Gauge("kessler_fairness_jain_index", "Jain's fairness index over active tenants' dispatch share")
+SCHEDULER_LEADER = Gauge(
+    "kessler_scheduler_leader", "1 on the scheduler that holds leadership (alert unless exactly one)"
+)
 WORKER_BUSY = Gauge("kessler_worker_busy_slots", "Busy simulation slots on this worker")
 
 WS_CONNECTIONS = Gauge("kessler_ws_connections", "Open WebSocket connections")
