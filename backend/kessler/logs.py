@@ -16,6 +16,16 @@ _SERVICE = "kessler"
 _RESERVED = set(vars(logging.LogRecord("", 0, "", 0, "", None, None)).keys()) | {"message", "asctime"}
 
 
+class SafeLogger(logging.Logger):
+    def makeRecord(self, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None):  # type: ignore[no-untyped-def]
+        if extra and not _RESERVED.isdisjoint(extra):
+            extra = {(f"extra_{k}" if k in _RESERVED else k): v for k, v in extra.items()}
+        return super().makeRecord(name, level, fn, lno, msg, args, exc_info, func, extra, sinfo)
+
+
+logging.setLoggerClass(SafeLogger)
+
+
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         doc: dict[str, Any] = {

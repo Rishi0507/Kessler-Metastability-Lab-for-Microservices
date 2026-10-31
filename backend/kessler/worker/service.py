@@ -16,7 +16,7 @@ from ..config import Settings
 from ..db import Database
 from ..engine import EngineError, SpecInvalid, get_engine
 from ..events import compact_summary, emit_analysis
-from ..heartbeat import cancel, heartbeat_loop
+from ..heartbeat import cancel, heartbeat_loop, supervise
 from ..logs import get_logger
 from ..metrics import QUEUE_WAIT, SIM_EVENTS, SIM_SECONDS, SIMS, WORKER_BUSY
 from ..redisio import create_redis
@@ -68,9 +68,9 @@ class Worker:
             await ensure_group(self.redis, stream, group)
         hb = asyncio.create_task(heartbeat_loop(self.redis, "worker", self.s.instance, self.stats))
         loops = [
-            asyncio.create_task(self._task_loop()),
-            asyncio.create_task(self._claim_loop()),
-            asyncio.create_task(self._live_loop()),
+            asyncio.create_task(supervise(self._task_loop, "tasks", log)),
+            asyncio.create_task(supervise(self._claim_loop, "reclaim", log)),
+            asyncio.create_task(supervise(self._live_loop, "live", log)),
         ]
         log.info("worker ready", extra={"slots": self.slots, "engine": self.engine.version})
         try:
@@ -128,8 +128,12 @@ class Worker:
                 if not fields:
                     continue
                 await self.sem.acquire()
-                log.info("reclaimed orphaned task", extra={"msg": msg_id.decode()})
-                self._spawn(msg_id, fields)
+                try:
+                    log.info("reclaimed orphaned task", extra={"stream_id": msg_id.decode()})
+                    self._spawn(msg_id, fields)
+                except BaseException:
+                    self.sem.release()
+                    raise
 
     async def _spec_json(self, system_id: str, version: int) -> dict[str, Any]:
         key = (system_id, version)
