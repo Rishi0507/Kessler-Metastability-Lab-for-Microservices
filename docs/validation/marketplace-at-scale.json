@@ -1,0 +1,346 @@
+{
+  "baseline": {
+    "pass": true,
+    "summary": "3 seeds ['stable']; worst success ratio 0.9997; e2e p50 58 ms, p99 500 ms",
+    "success_ratio": 0.9997,
+    "p50_ms": 58.37,
+    "p99_ms": 499.71
+  },
+  "flow": {
+    "pass": true,
+    "summary": "45 services checked; worst carriers 31.9 rps vs 30.7 model (+3.90%)",
+    "services": [
+      {
+        "name": "gateway",
+        "model_rps": 1000.0,
+        "sim_rps": 998.6,
+        "rel_err": -0.0014
+      },
+      {
+        "name": "auth",
+        "model_rps": 1000.0,
+        "sim_rps": 998.6,
+        "rel_err": -0.0014
+      },
+      {
+        "name": "sessions",
+        "model_rps": 1000.0,
+        "sim_rps": 998.61,
+        "rel_err": -0.00139
+      },
+      {
+        "name": "users",
+        "model_rps": 147.78,
+        "sim_rps": 147.45,
+        "rel_err": -0.00225
+      },
+      {
+        "name": "users-db",
+        "model_rps": 82.51,
+        "sim_rps": 82.23,
+        "rel_err": -0.00344
+      },
+      {
+        "name": "bff-web",
+        "model_rps": 620.0,
+        "sim_rps": 618.17,
+        "rel_err": -0.00295
+      },
+      {
+        "name": "bff-mobile",
+        "model_rps": 380.0,
+        "sim_rps": 378.93,
+        "rel_err": -0.00283
+      },
+      {
+        "name": "catalog",
+        "model_rps": 996.1,
+        "sim_rps": 993.51,
+        "rel_err": -0.0026
+      },
+      {
+        "name": "catalog-cache",
+        "model_rps": 996.1,
+        "sim_rps": 993.49,
+        "rel_err": -0.00262
+      },
+      {
+        "name": "catalog-db",
+        "model_rps": 79.69,
+        "sim_rps": 79.64,
+        "rel_err": -0.00062
+      },
+      {
+        "name": "media",
+        "model_rps": 398.44,
+        "sim_rps": 398.18,
+        "rel_err": -0.00065
+      },
+      {
+        "name": "media-store",
+        "model_rps": 79.69,
+        "sim_rps": 79.41,
+        "rel_err": -0.00355
+      },
+      {
+        "name": "search",
+        "model_rps": 407.0,
+        "sim_rps": 406.37,
+        "rel_err": -0.00156
+      },
+      {
+        "name": "query-understanding",
+        "model_rps": 325.6,
+        "sim_rps": 324.46,
+        "rel_err": -0.0035
+      },
+      {
+        "name": "search-index",
+        "model_rps": 407.0,
+        "sim_rps": 406.34,
+        "rel_err": -0.00162
+      },
+      {
+        "name": "recommendations",
+        "model_rps": 424.0,
+        "sim_rps": 422.51,
+        "rel_err": -0.00351
+      },
+      {
+        "name": "personalization",
+        "model_rps": 310.0,
+        "sim_rps": 309.76,
+        "rel_err": -0.00079
+      },
+      {
+        "name": "feature-store",
+        "model_rps": 734.0,
+        "sim_rps": 732.36,
+        "rel_err": -0.00223
+      },
+      {
+        "name": "features-db",
+        "model_rps": 110.1,
+        "sim_rps": 109.91,
+        "rel_err": -0.00172
+      },
+      {
+        "name": "ranking",
+        "model_rps": 424.0,
+        "sim_rps": 422.52,
+        "rel_err": -0.00349
+      },
+      {
+        "name": "pricing",
+        "model_rps": 1253.09,
+        "sim_rps": 1252.17,
+        "rel_err": -0.00073
+      },
+      {
+        "name": "pricing-rules",
+        "model_rps": 1253.09,
+        "sim_rps": 1252.18,
+        "rel_err": -0.00073
+      },
+      {
+        "name": "promotions",
+        "model_rps": 375.93,
+        "sim_rps": 374.22,
+        "rel_err": -0.00454
+      },
+      {
+        "name": "pricing-db",
+        "model_rps": 250.62,
+        "sim_rps": 250.15,
+        "rel_err": -0.00187
+      },
+      {
+        "name": "inventory",
+        "model_rps": 797.86,
+        "sim_rps": 796.77,
+        "rel_err": -0.00137
+      },
+      {
+        "name": "inventory-db",
+        "model_rps": 797.86,
+        "sim_rps": 796.84,
+        "rel_err": -0.00128
+      },
+      {
+        "name": "reviews",
+        "model_rps": 243.0,
+        "sim_rps": 242.21,
+        "rel_err": -0.00326
+      },
+      {
+        "name": "reviews-db",
+        "model_rps": 243.0,
+        "sim_rps": 242.21,
+        "rel_err": -0.00323
+      },
+      {
+        "name": "cart",
+        "model_rps": 312.8,
+        "sim_rps": 313.6,
+        "rel_err": 0.00256
+      },
+      {
+        "name": "cart-store",
+        "model_rps": 312.8,
+        "sim_rps": 313.6,
+        "rel_err": 0.00255
+      },
+      {
+        "name": "checkout",
+        "model_rps": 43.8,
+        "sim_rps": 44.17,
+        "rel_err": 0.00837
+      },
+      {
+        "name": "fraud",
+        "model_rps": 43.8,
+        "sim_rps": 44.17,
+        "rel_err": 0.00837
+      },
+      {
+        "name": "fraud-model",
+        "model_rps": 43.8,
+        "sim_rps": 44.16,
+        "rel_err": 0.0082
+      },
+      {
+        "name": "payments",
+        "model_rps": 43.8,
+        "sim_rps": 44.26,
+        "rel_err": 0.01057
+      },
+      {
+        "name": "payments-db",
+        "model_rps": 43.8,
+        "sim_rps": 44.15,
+        "rel_err": 0.00803
+      },
+      {
+        "name": "tax",
+        "model_rps": 43.8,
+        "sim_rps": 44.15,
+        "rel_err": 0.00795
+      },
+      {
+        "name": "shipping",
+        "model_rps": 43.8,
+        "sim_rps": 44.62,
+        "rel_err": 0.01869
+      },
+      {
+        "name": "carriers",
+        "model_rps": 30.66,
+        "sim_rps": 31.86,
+        "rel_err": 0.03899
+      },
+      {
+        "name": "orders",
+        "model_rps": 43.8,
+        "sim_rps": 44.14,
+        "rel_err": 0.00769
+      },
+      {
+        "name": "orders-db",
+        "model_rps": 43.8,
+        "sim_rps": 44.14,
+        "rel_err": 0.00786
+      },
+      {
+        "name": "events",
+        "model_rps": 43.8,
+        "sim_rps": 44.14,
+        "rel_err": 0.00778
+      },
+      {
+        "name": "notifications",
+        "model_rps": 43.8,
+        "sim_rps": 44.14,
+        "rel_err": 0.00778
+      },
+      {
+        "name": "notification-prefs",
+        "model_rps": 81.8,
+        "sim_rps": 82.26,
+        "rel_err": 0.00561
+      },
+      {
+        "name": "email",
+        "model_rps": 26.28,
+        "sim_rps": 26.41,
+        "rel_err": 0.00499
+      },
+      {
+        "name": "push",
+        "model_rps": 17.52,
+        "sim_rps": 17.87,
+        "rel_err": 0.01979
+      }
+    ]
+  },
+  "accounting": {
+    "pass": true,
+    "summary": "largest gap between arrivals and outcomes 0.254% (boundary effects only)",
+    "worst_gap": 0.0025412960609911056
+  },
+  "determinism": {
+    "pass": true,
+    "summary": "same seed gives identical results, sequentially and on parallel threads"
+  },
+  "saturation": {
+    "pass": true,
+    "summary": "model saturates at 1.49x today's load; simulation overloaded from 1.34x (within 0.75-1.3x of the model)",
+    "model": 1.4907,
+    "onset": 1.342,
+    "verdicts": {
+      "0.894": [
+        "stable",
+        "stable"
+      ],
+      "1.193": [
+        "stable",
+        "stable"
+      ],
+      "1.342": [
+        "overloaded",
+        "overloaded"
+      ],
+      "1.491": [
+        "overloaded",
+        "overloaded"
+      ],
+      "1.64": [
+        "overloaded",
+        "overloaded"
+      ],
+      "1.789": [
+        "overloaded",
+        "overloaded"
+      ],
+      "2.087": [
+        "overloaded",
+        "overloaded"
+      ]
+    }
+  },
+  "planner": {
+    "pass": true,
+    "summary": "adaptive simulated 25/60 cells; 35 inferred, 0 disagree with the full grid",
+    "cells": 60,
+    "simulated": 25,
+    "disagree": []
+  },
+  "performance": {
+    "pass": true,
+    "summary": "145 simulations, 1735M events; 3.30M events/s per thread; 3.63 s per simulation; memory grew 5 MB",
+    "sims": 145,
+    "events": 1734900743,
+    "events_per_s": 3297653.070591537,
+    "s_per_sim": 3.6282872862058113,
+    "rss_growth_mb": 4.70703125
+  }
+}
