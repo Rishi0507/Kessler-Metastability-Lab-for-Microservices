@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { layeredLayout } from "../lib/layout";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { Frame, Topology } from "../lib/types";
 import { color, disposeAll, makeRenderer, utilColor } from "./common";
@@ -83,30 +84,16 @@ export class TopologyScene implements SceneHandle {
   }
 
   private layout(topo: Topology) {
-    const depth = new Map<string, number>([["client", 0]]);
-    const queue = ["client"];
-    while (queue.length) {
-      const u = queue.shift()!;
-      for (const e of topo.edges.filter((x) => x.from === u)) {
-        if (!depth.has(e.to)) {
-          depth.set(e.to, (depth.get(u) ?? 0) + 1);
-          queue.push(e.to);
-        }
-      }
-    }
-    const layers = new Map<number, string[]>();
-    for (const n of topo.nodes) {
-      const d = depth.get(n.id) ?? 1;
-      layers.set(d, [...(layers.get(d) ?? []), n.id]);
-    }
-    const maxDepth = Math.max(...layers.keys());
-    for (const [d, ids] of layers) {
+    const { layers } = layeredLayout(topo);
+    const maxDepth = layers.length - 1;
+    const widest = Math.max(1, ...layers.map((l) => l.length));
+    for (const [d, ids] of layers.entries()) {
       ids.forEach((id, i) => {
-        const node = topo.nodes.find((n) => n.id === id)!;
+        const node = topo.nodes.find((n) => n.id === id);
         const x = (d - maxDepth / 2) * 2.8;
         const z = (i - (ids.length - 1) / 2) * 2.2;
         const pos = new THREE.Vector3(x, 0, z);
-        const r = id === "client" ? 0.26 : 0.22 + 0.07 * Math.sqrt(node.instances ?? 1);
+        const r = id === "client" ? 0.26 : 0.22 + 0.07 * Math.sqrt(node?.instances ?? 1);
         const body = new THREE.Mesh(
           id === "client" ? new THREE.SphereGeometry(r, 6, 4) : new THREE.SphereGeometry(r, 32, 20),
           new THREE.MeshStandardMaterial({ color: this.colors.ink, roughness: 0.4, emissive: new THREE.Color(0x000000) }),
@@ -147,7 +134,7 @@ export class TopologyScene implements SceneHandle {
       this.scene.add(line);
       this.edges.push({ from: e.from, to: e.to, curve, line, rps: 0, err: 0, retry: 0, acc: 0 });
     }
-    const span = (maxDepth + 1) * 2.8;
+    const span = Math.max((maxDepth + 1) * 2.8, widest * 2.2);
     this.camera.position.set(0, span * 0.55, span * 0.95);
     this.camera.lookAt(0, 0, 0);
   }

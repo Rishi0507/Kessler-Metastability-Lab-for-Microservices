@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { aggregate, cellState } from "./cells";
 import { axisValue, fmtMs, fmtMult, fmtPct, triggerPhrase } from "./format";
+import { layeredLayout } from "./layout";
 import { backoffMs, RetryBudget } from "./retry";
 import type { SimSummary } from "./types";
 
@@ -89,5 +90,28 @@ describe("formatting", () => {
   it("describes triggers in plain language", () => {
     expect(triggerPhrase({ kind: "latency", target: "db", duration_s: 20 }, 3)).toBe("a 3× slowdown on db for 20 s");
     expect(triggerPhrase({ kind: "cache_flush", target: "cache" })).toBe("a cache flush on cache");
+  });
+});
+
+describe("layered call-graph layout", () => {
+  const node = (id: string) => ({ id, kind: "service", label: id, instances: 1, concurrency: 1, utilization: 0, capacity_rps: 0, arrival_rps: 0, hold_ms: 0, queue: { capacity: 0, discipline: "fifo" }, autoscale: false });
+  const edge = (from: string, to: string) => ({ from, to, probability: 1, timeout_ms: 100, attempts: 1, jitter: "full", budget: null, breaker: null });
+  const topo = {
+    nodes: [{ ...node("client"), kind: "client" }, node("bff"), node("search"), node("catalog"), node("db"), node("ads")],
+    edges: [edge("client", "bff"), edge("bff", "search"), edge("bff", "catalog"), edge("search", "catalog"), edge("catalog", "db"), edge("bff", "ads")],
+    entry: "bff",
+    bottleneck: "db",
+  } as unknown as Parameters<typeof layeredLayout>[0];
+
+  it("places every node once and points every call to a deeper layer", () => {
+    const { layers, depth } = layeredLayout(topo);
+    expect(layers.flat().sort()).toEqual(["ads", "bff", "catalog", "client", "db", "search"]);
+    for (const e of topo.edges) expect(depth.get(e.to)!).toBeGreaterThan(depth.get(e.from)!);
+    expect(depth.get("catalog")).toBe(3);
+  });
+
+  it("orders a layer by its callers' positions", () => {
+    const { slot } = layeredLayout(topo);
+    expect(slot.get("db")).toBe(slot.get("catalog"));
   });
 });
