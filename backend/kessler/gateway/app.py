@@ -17,7 +17,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from .. import keys
 from ..config import get_settings
-from ..heartbeat import cancel, heartbeat_loop
+from ..heartbeat import cancel, heartbeat_loop, supervise
 from ..logs import get_logger, setup_logging
 from ..metrics import WS_CONNECTIONS, WS_MESSAGES, render
 from ..ratelimit import RateLimiter
@@ -236,7 +236,7 @@ def create_app() -> Starlette:
         setup_tracing("gateway", s.otlp_endpoint)
         gw = Gateway()
         app.state.gw = gw
-        reader = asyncio.create_task(gw.reader())
+        reader = asyncio.create_task(supervise(gw.reader, "pubsub reader", log))
         hb = asyncio.create_task(heartbeat_loop(gw.redis, "gateway", s.instance, gw.stats))
         log.info("gateway ready", extra={"port": s.port})
         try:

@@ -36,6 +36,20 @@ async def heartbeat_loop(
         await asyncio.sleep(interval_s)
 
 
+async def supervise(fn: Any, name: str, logger: Any, max_delay_s: float = 10.0, first_delay_s: float = 0.5) -> None:
+    delay = first_delay_s
+    while True:
+        try:
+            await fn()
+            return
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception(f"{name} loop crashed; restarting in {delay:g} s")
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, max_delay_s)
+
+
 async def cancel(*tasks: asyncio.Task[Any] | None) -> None:
     for t in tasks:
         if t is not None:

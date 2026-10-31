@@ -10,7 +10,7 @@ from .. import errors
 from ..config import Settings, get_settings
 from ..db import Database
 from ..engine import get_engine
-from ..heartbeat import cancel, heartbeat_loop
+from ..heartbeat import cancel, heartbeat_loop, supervise
 from ..logs import get_logger, setup_logging
 from ..metrics import HTTP_INFLIGHT
 from ..ratelimit import RateLimiter
@@ -47,7 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return {"port": s.port, "inflight": HTTP_INFLIGHT._value.get(), "engine": engine.version}
 
         hb = asyncio.create_task(heartbeat_loop(redis, "api", s.instance, stats))
-        lag = asyncio.create_task(_replica_lag_loop(db))
+        lag = asyncio.create_task(supervise(lambda: _replica_lag_loop(db), "replica lag", log))
         log.info("api ready", extra={"port": s.port, "engine": engine.version, "replica": db.replica is not None})
         try:
             yield

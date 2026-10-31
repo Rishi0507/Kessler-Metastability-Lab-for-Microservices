@@ -14,7 +14,7 @@ from ..analysis.planner import SweepParams
 from ..config import Settings
 from ..db import Database
 from ..engine import get_engine
-from ..heartbeat import cancel, heartbeat_loop
+from ..heartbeat import cancel, heartbeat_loop, supervise
 from ..logs import get_logger
 from ..metrics import FAIRNESS, INFLIGHT_TASKS, QUEUE_DEPTH, QUEUE_WAIT, TIME_TO_FIRST_INSIGHT
 from ..redisio import create_redis
@@ -122,17 +122,7 @@ class Scheduler:
             await self.db.close()
 
     async def _guard(self, fn: Any, name: str) -> None:
-        delay = 0.5
-        while True:
-            try:
-                await fn()
-                return
-            except asyncio.CancelledError:
-                raise
-            except Exception:
-                log.exception(f"{name} loop crashed; restarting")
-                await asyncio.sleep(delay)
-                delay = min(delay * 2, 10.0)
+        await supervise(fn, name, log)
 
     async def _outbox_loop(self) -> None:
         assert self.redis is not None
