@@ -96,6 +96,9 @@ def save_state(state: dict[str, int]) -> None:
     STATE.write_text(json.dumps(state, indent=2))
 
 
+SPAWN_FLAGS = (subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP) if WIN else 0
+
+
 def alive(pid: int) -> bool:
     if WIN:
         out = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True).stdout
@@ -226,13 +229,7 @@ def nginx_start(name: str, conf_file: str, listen: int, web_root: Path) -> None:
     if test.returncode != 0:
         sys.exit(f"devstack: nginx config test failed for {name}:\n{test.stderr}")
     log(f"starting nginx {name} on :{listen}")
-    subprocess.Popen(
-        args,
-        cwd=prefix,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if WIN else 0,
-    )
+    subprocess.Popen(args, cwd=prefix, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=SPAWN_FLAGS)
     wait_for(lambda: port_open(listen), f"nginx {name}")
 
 
@@ -285,26 +282,51 @@ def start_service(svc: Service, replica: bool, state: dict[str, int]) -> None:
         env=env,
         stdout=logf,
         stderr=subprocess.STDOUT,
-        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if WIN else 0,
+        creationflags=SPAWN_FLAGS,
     )
     state[svc.name] = p.pid
     save_state(state)
     log(f"started {svc.name} (pid {p.pid})")
 
 
+_CTRL_BREAK_HELPER = """
+import ctypes, sys
+k = ctypes.windll.kernel32
+pid = int(sys.argv[1])
+k.FreeConsole()
+if not k.AttachConsole(pid):
+    sys.exit(1)
+ignore = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_uint)(lambda event: 1)
+k.SetConsoleCtrlHandler(ignore, 1)
+sys.exit(0 if k.GenerateConsoleCtrlEvent(1, pid) else 2)
+"""
+
+
+def request_stop(pid: int) -> bool:
+    if not WIN:
+        os.kill(pid, signal.SIGTERM)
+        return True
+    r = subprocess.run(
+        [python(), "-I", "-c", _CTRL_BREAK_HELPER, str(pid)],
+        capture_output=True,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+    return r.returncode == 0
+
+
 def stop_pid(name: str, pid: int) -> None:
     if not alive(pid):
         return
     log(f"stopping {name} (pid {pid})")
-    try:
-        os.kill(pid, signal.CTRL_BREAK_EVENT if WIN else signal.SIGTERM)
-    except OSError:
-        pass
+    if not request_stop(pid):
+        log(f"{name} could not be asked to drain; stopping it hard")
     deadline = time.time() + 15
     while time.time() < deadline and alive(pid):
         time.sleep(0.3)
     if alive(pid):
-        subprocess.run(["taskkill", "/F", "/PID", str(pid)] if WIN else ["kill", "-9", str(pid)], capture_output=True)
+        subprocess.run(
+            ["taskkill", "/F", "/T", "/PID", str(pid)] if WIN else ["kill", "-9", str(pid)], capture_output=True
+        )
 
 
 def services(args: argparse.Namespace) -> list[Service]:
@@ -361,7 +383,7 @@ def up(args: argparse.Namespace) -> None:
             ],
             stdout=logf,
             stderr=subprocess.STDOUT,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if WIN else 0,
+            creationflags=SPAWN_FLAGS,
         )
         state = load_state()
         state["redis"] = p.pid
@@ -387,6 +409,24 @@ def up(args: argparse.Namespace) -> None:
     nginx_start("lb", "l4.conf", LB_PORT, web_root)
     wait_for(lambda: http_ok(f"http://127.0.0.1:{LB_PORT}/edge-health"), "load balancer")
     log(f"ready: http://localhost:{LB_PORT}  (api docs: http://localhost:{LB_PORT}/api/docs)")
+    if args.detach:
+        return
+    log("attached: press Ctrl+C to stop the stack")
+    reported: set[str] = set()
+    try:
+        while True:
+            time.sleep(5)
+            state = load_state()
+            for name, pid in state.items():
+                if not alive(pid) and name not in reported:
+                    reported.add(name)
+                    log(f"{name} (pid {pid}) exited; see .devdata/logs/{name}.log")
+                elif alive(pid) and name in reported:
+                    reported.discard(name)
+                    log(f"{name} is running again (pid {pid})")
+    except KeyboardInterrupt:
+        log("stopping")
+        down(args)
 
 
 def down(_: argparse.Namespace) -> None:
@@ -403,6 +443,20 @@ def down(_: argparse.Namespace) -> None:
     pg_stop()
     STATE.unlink(missing_ok=True)
     log("stopped")
+
+
+def restart(args: argparse.Namespace) -> None:
+    picked = [s for s in services(args) if not args.name or args.name in (s.name, s.name.rsplit("-", 1)[0])]
+    if not picked:
+        sys.exit(f"no app process matches {args.name!r}")
+    for svc in picked:
+        state = load_state()
+        if svc.name in state:
+            stop_pid(svc.name, state[svc.name])
+        start_service(svc, replica=not args.no_replica, state=state)
+        if svc.ready:
+            wait_for(lambda u=svc.ready: http_ok(u), svc.name, timeout=90)
+    log(f"restarted {len(picked)} process(es)")
 
 
 def status(args: argparse.Namespace) -> None:
@@ -432,16 +486,17 @@ def logs(args: argparse.Namespace) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["up", "down", "status", "logs"])
-    ap.add_argument("name", nargs="?", help="service name for `logs`")
+    ap.add_argument("command", choices=["up", "down", "status", "logs", "restart"])
+    ap.add_argument("name", nargs="?", help="process (or group, for `restart`) name")
     ap.add_argument("-n", type=int, default=60, help="lines for `logs`")
     ap.add_argument("--api", type=int, default=3)
     ap.add_argument("--gateways", type=int, default=2)
     ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--threads", type=int, default=2, help="simulation slots per worker")
     ap.add_argument("--no-replica", action="store_true")
+    ap.add_argument("-d", "--detach", action="store_true", help="start everything and return immediately")
     args = ap.parse_args()
-    {"up": up, "down": down, "status": status, "logs": logs}[args.command](args)
+    {"up": up, "down": down, "status": status, "logs": logs, "restart": restart}[args.command](args)
 
 
 if __name__ == "__main__":
