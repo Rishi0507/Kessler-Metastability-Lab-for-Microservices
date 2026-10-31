@@ -85,29 +85,86 @@ def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, check=True, **kw)
 
 
-def load_state() -> dict[str, int]:
+Proc = dict[str, float]
+
+
+def load_state() -> dict[str, Proc]:
     try:
-        return json.loads(STATE.read_text())
+        raw = json.loads(STATE.read_text())
     except (OSError, ValueError):
         return {}
+    return {k: v if isinstance(v, dict) else {"pid": v, "started": -1.0} for k, v in raw.items()}
 
 
-def save_state(state: dict[str, int]) -> None:
+def save_state(state: dict[str, Proc]) -> None:
     STATE.write_text(json.dumps(state, indent=2))
+
+
+def track(pid: int) -> Proc:
+    return {"pid": pid, "started": start_time(pid) or -1.0}
 
 
 SPAWN_FLAGS = (subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP) if WIN else 0
 
 
-def alive(pid: int) -> bool:
+def start_time(pid: int) -> float | None:
     if WIN:
-        out = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True).stdout
-        return str(pid) in out
+        import ctypes
+        from ctypes import wintypes
+
+        k = ctypes.WinDLL("kernel32", use_last_error=True)
+        k.OpenProcess.restype = wintypes.HANDLE
+        k.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        k.GetProcessTimes.argtypes = [wintypes.HANDLE, *[ctypes.POINTER(wintypes.FILETIME)] * 4]
+        k.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        k.CloseHandle.argtypes = [wintypes.HANDLE]
+        h = k.OpenProcess(0x1000, False, pid)
+        if not h:
+            return None
+        try:
+            code = wintypes.DWORD()
+            if not k.GetExitCodeProcess(h, ctypes.byref(code)) or code.value != 259:
+                return None
+            times = [wintypes.FILETIME() for _ in range(4)]
+            if not k.GetProcessTimes(h, *[ctypes.byref(t) for t in times]):
+                return None
+            return ((times[0].dwHighDateTime << 32) | times[0].dwLowDateTime) / 1e7
+        finally:
+            k.CloseHandle(h)
+    try:
+        with open(f"/proc/{pid}/stat", encoding="ascii") as f:
+            return float(f.read().rsplit(")", 1)[1].split()[19])
+    except OSError:
+        pass
     try:
         os.kill(pid, 0)
-        return True
+        return 0.0
     except OSError:
-        return False
+        return None
+
+
+def alive(proc: Proc) -> bool:
+    t = start_time(int(proc["pid"]))
+    return t is not None and proc["started"] >= 0 and abs(t - proc["started"]) < 1e-3
+
+
+def procs_matching(image: str, fragment: str) -> list[int]:
+    if WIN:
+        script = (
+            f"Get-CimInstance Win32_Process -Filter \"Name='{image}'\" | "
+            f"Where-Object {{ $_.CommandLine -and $_.CommandLine.Contains('{fragment.replace(chr(39), chr(39) * 2)}') }} | "
+            "ForEach-Object { $_.ProcessId }"
+        )
+        out = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-Command", script], capture_output=True, text=True
+        ).stdout
+    else:
+        out = subprocess.run(["pgrep", "-f", fragment], capture_output=True, text=True).stdout
+    return [int(x) for x in out.split() if x.isdigit()]
+
+
+def kill_hard(pid: int) -> None:
+    subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)] if WIN else ["kill", "-9", str(pid)], capture_output=True)
 
 
 def pg_setup() -> None:
@@ -235,12 +292,24 @@ def nginx_start(name: str, conf_file: str, listen: int, web_root: Path) -> None:
 
 def nginx_stop(name: str) -> None:
     prefix = DATA / "nginx" / name
-    if (prefix / "logs" / "nginx.pid").exists():
-        conf = "l4.conf" if name == "lb" else "edge.conf"
-        log(f"stopping nginx {name}")
-        subprocess.run(
-            [nginx(), "-p", str(prefix) + os.sep, "-c", f"conf/{conf}", "-s", "quit"], cwd=prefix, capture_output=True
-        )
+    pid_file = prefix / "logs" / "nginx.pid"
+    image = "nginx.exe" if WIN else "nginx"
+    procs = procs_matching(image, str(prefix))
+    if not procs and not pid_file.exists():
+        return
+    log(f"stopping nginx {name}")
+    conf = "l4.conf" if name == "lb" else "edge.conf"
+    subprocess.run(
+        [nginx(), "-p", str(prefix) + os.sep, "-c", f"conf/{conf}", "-s", "quit"], cwd=prefix, capture_output=True
+    )
+    deadline = time.time() + 10
+    while procs and time.time() < deadline:
+        time.sleep(0.5)
+        procs = procs_matching(image, str(prefix))
+    for pid in procs:
+        log(f"nginx {name}: stopping leftover process {pid}")
+        kill_hard(pid)
+    pid_file.unlink(missing_ok=True)
 
 
 @dataclass
@@ -272,7 +341,7 @@ def app_env(name: str, replica: bool) -> dict[str, str]:
 
 def start_service(svc: Service, replica: bool, state: dict[str, int]) -> None:
     if svc.name in state and alive(state[svc.name]):
-        log(f"{svc.name} already running (pid {state[svc.name]})")
+        log(f"{svc.name} already running (pid {int(state[svc.name]['pid'])})")
         return
     logf = open(LOGS / f"{svc.name}.log", "ab")  # noqa: SIM115
     env = app_env(svc.name, replica) | svc.env
@@ -284,7 +353,7 @@ def start_service(svc: Service, replica: bool, state: dict[str, int]) -> None:
         stderr=subprocess.STDOUT,
         creationflags=SPAWN_FLAGS,
     )
-    state[svc.name] = p.pid
+    state[svc.name] = track(p.pid)
     save_state(state)
     log(f"started {svc.name} (pid {p.pid})")
 
@@ -314,19 +383,18 @@ def request_stop(pid: int) -> bool:
     return r.returncode == 0
 
 
-def stop_pid(name: str, pid: int) -> None:
-    if not alive(pid):
+def stop_proc(name: str, proc: Proc) -> None:
+    if not alive(proc):
         return
+    pid = int(proc["pid"])
     log(f"stopping {name} (pid {pid})")
     if not request_stop(pid):
         log(f"{name} could not be asked to drain; stopping it hard")
     deadline = time.time() + 15
-    while time.time() < deadline and alive(pid):
+    while time.time() < deadline and alive(proc):
         time.sleep(0.3)
-    if alive(pid):
-        subprocess.run(
-            ["taskkill", "/F", "/T", "/PID", str(pid)] if WIN else ["kill", "-9", str(pid)], capture_output=True
-        )
+    if alive(proc):
+        kill_hard(pid)
 
 
 def services(args: argparse.Namespace) -> list[Service]:
@@ -386,7 +454,7 @@ def up(args: argparse.Namespace) -> None:
             creationflags=SPAWN_FLAGS,
         )
         state = load_state()
-        state["redis"] = p.pid
+        state["redis"] = track(p.pid)
         save_state(state)
         wait_for(lambda: port_open(REDIS_PORT), "redis")
     log("applying migrations")
@@ -417,13 +485,14 @@ def up(args: argparse.Namespace) -> None:
         while True:
             time.sleep(5)
             state = load_state()
-            for name, pid in state.items():
-                if not alive(pid) and name not in reported:
+            for name, proc in state.items():
+                up_now = alive(proc)
+                if not up_now and name not in reported:
                     reported.add(name)
-                    log(f"{name} (pid {pid}) exited; see .devdata/logs/{name}.log")
-                elif alive(pid) and name in reported:
+                    log(f"{name} (pid {int(proc['pid'])}) exited; see .devdata/logs/{name}.log")
+                elif up_now and name in reported:
                     reported.discard(name)
-                    log(f"{name} is running again (pid {pid})")
+                    log(f"{name} is running again (pid {int(proc['pid'])})")
     except KeyboardInterrupt:
         log("stopping")
         down(args)
@@ -437,9 +506,9 @@ def down(_: argparse.Namespace) -> None:
     order = sorted(state, key=lambda n: (n.startswith("redis"), not n.startswith("api"), n))
     for name in order:
         if name != "redis":
-            stop_pid(name, state[name])
+            stop_proc(name, state[name])
     if "redis" in state:
-        stop_pid("redis", state["redis"])
+        stop_proc("redis", state["redis"])
     pg_stop()
     STATE.unlink(missing_ok=True)
     log("stopped")
@@ -452,7 +521,7 @@ def restart(args: argparse.Namespace) -> None:
     for svc in picked:
         state = load_state()
         if svc.name in state:
-            stop_pid(svc.name, state[svc.name])
+            stop_proc(svc.name, state[svc.name])
         start_service(svc, replica=not args.no_replica, state=state)
         if svc.ready:
             wait_for(lambda u=svc.ready: http_ok(u), svc.name, timeout=90)
