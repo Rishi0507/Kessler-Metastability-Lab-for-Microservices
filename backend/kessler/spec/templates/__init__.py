@@ -49,6 +49,10 @@ _META: dict[str, dict[str, Any]] = {
         "tags": ("dogfooding", "connection pool"),
         "trigger": {"kind": "latency", "target": "postgres", "duration_s": 20},
     },
+    "marketplace-at-scale": {
+        "tags": ("45 services", "shared databases", "fan-out"),
+        "trigger": {"kind": "latency", "target": "inventory-db", "duration_s": 20},
+    },
 }
 
 

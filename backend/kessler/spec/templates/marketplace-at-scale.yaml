@@ -1,0 +1,491 @@
+name: Marketplace at scale
+description: >
+  A 45-service marketplace. Web and mobile BFFs fan out to catalog, search,
+  recommendations, reviews, cart and checkout; four caches sit in front of six
+  databases; ranking autoscales; checkout calls nine services in a row. Edges are
+  configured the way real teams configure them: some budgeted and jittered, some
+  retrying three times with no jitter, one database behind a deep queue.
+traffic:
+  rps: 1000
+  entry: gateway
+  client:
+    timeout: 3s
+    retry: { attempts: 2, base: 250ms, cap: 2s, jitter: full }
+    budget: 10%
+services:
+  gateway:
+    description: API gateway (TLS termination, routing, token check)
+    instances: 4
+    concurrency: 48
+    latency: { p50: 0.5ms, p99: 3ms }
+    lb: p2c
+    calls:
+      - to: auth
+        timeout: 150ms
+        retry: { attempts: 2, base: 20ms, jitter: full }
+        budget: 10%
+      - to: bff-web
+        probability: 62%
+        timeout: 2500ms
+      - to: bff-mobile
+        probability: 38%
+        timeout: 2500ms
+  auth:
+    description: Validates session tokens
+    instances: 2
+    concurrency: 4
+    latency: { p50: 1ms, p99: 5ms }
+    calls:
+      - to: sessions
+        timeout: 40ms
+        retry: { attempts: 2, base: 5ms, jitter: full }
+  sessions:
+    description: Session cache (Redis); misses load the user record
+    instances: 3
+    concurrency: 32
+    latency: { p50: 0.3ms, p99: 1.5ms }
+    cache: { hit_ratio: 97%, key_space: 1000000, miss_target: users-db }
+    calls:
+      - to: users-db
+        timeout: 100ms
+        retry: { attempts: 2, base: 10ms, jitter: full }
+  users:
+    description: User profiles
+    instances: 2
+    concurrency: 2
+    latency: { p50: 2ms, p99: 8ms }
+    calls:
+      - to: users-db
+        probability: 30%
+        timeout: 100ms
+        retry: { attempts: 2, base: 10ms, jitter: full }
+  users-db:
+    description: Shared user database (sessions, profiles, preferences)
+    instances: 1
+    concurrency: 2
+    latency: { p50: 3ms, p99: 15ms }
+    queue: { capacity: 400 }
+    contention: { knee: 80%, factor: 0.6 }
+
+  bff-web:
+    description: Web BFF; composes product, search and cart pages
+    instances: 3
+    concurrency: 38
+    latency: { p50: 2ms, p99: 8ms }
+    autoscale: { min: 3, max: 9, target_utilization: 60%, provision: 60s }
+    calls:
+      - to: personalization
+        probability: 50%
+        timeout: 150ms
+      - to: catalog
+        probability: 70%
+        timeout: 400ms
+        retry: { attempts: 2, base: 50ms, jitter: none }
+      - to: search
+        probability: 35%
+        timeout: 700ms
+        retry: { attempts: 2, base: 100ms, jitter: full }
+      - to: recommendations
+        probability: 50%
+        timeout: 300ms
+      - to: reviews
+        probability: 30%
+        timeout: 300ms
+        retry: { attempts: 2, base: 50ms, jitter: full }
+      - to: cart
+        probability: 25%
+        timeout: 400ms
+        retry: { attempts: 2, base: 50ms, jitter: full }
+      - to: checkout
+        probability: 4%
+        timeout: 2000ms
+  bff-mobile:
+    description: Mobile BFF; leaner pages, more search
+    instances: 2
+    concurrency: 33
+    latency: { p50: 2ms, p99: 8ms }
+    calls:
+      - to: catalog
+        probability: 60%
+        timeout: 400ms
+        retry: { attempts: 2, base: 50ms, jitter: full }
+        budget: 10%
+      - to: search
+        probability: 50%
+        timeout: 700ms
+        retry: { attempts: 2, base: 100ms, jitter: full }
+        budget: 10%
+      - to: recommendations
+        probability: 30%
+        timeout: 300ms
+      - to: reviews
+        probability: 15%
+        timeout: 300ms
+      - to: cart
+        probability: 30%
+        timeout: 400ms
+        retry: { attempts: 2, base: 50ms, jitter: full }
+        budget: 10%
+      - to: checkout
+        probability: 5%
+        timeout: 2000ms
+      - to: notification-prefs
+        probability: 10%
+        timeout: 100ms
+
+  catalog:
+    description: Product details; hydrates search and recommendation results
+    instances: 2
+    concurrency: 26
+    latency: { p50: 2ms, p99: 10ms }
+    calls:
+      - to: catalog-cache
+        timeout: 50ms
+      - to: pricing
+        probability: 90%
+        timeout: 120ms
+        retry: { attempts: 2, base: 20ms, jitter: full }
+        budget: 10%
+      - to: inventory
+        probability: 60%
+        timeout: 120ms
+        retry: { attempts: 2, base: 20ms, jitter: full }
+      - to: media
+        probability: 40%
+        timeout: 200ms
+  catalog-cache:
+    description: Product cache; misses read the catalog database
+    instances: 3
+    concurrency: 32
+    latency: { p50: 0.4ms, p99: 2ms }
+    cache: { hit_ratio: 92%, key_space: 500000, miss_target: catalog-db }
+    calls:
+      - to: catalog-db
+        timeout: 150ms
+        retry: { attempts: 2, base: 20ms, jitter: none }
+  catalog-db:
+    description: Catalog database (two read replicas)
+    instances: 1
+    concurrency: 2
+    latency: { p50: 4ms, p99: 25ms }
+    queue: { capacity: 1000 }
+    contention: { knee: 75%, factor: 0.8 }
+  media:
+    description: Image metadata and resizing
+    instances: 2
+    concurrency: 6
+    latency: { p50: 4ms, p99: 30ms }
+    calls:
+      - to: media-store
+        probability: 20%
+        timeout: 500ms
+  media-store:
+    description: Object storage for originals
+    instances: 2
+    concurrency: 3
+    latency: { p50: 20ms, p99: 150ms }
+
+  search:
+    description: Query parsing, retrieval and hydration
+    instances: 2
+    concurrency: 20
+    latency: { p50: 4ms, p99: 20ms }
+    autoscale: { min: 2, max: 6, target_utilization: 60%, provision: 90s }
+    calls:
+      - to: query-understanding
+        probability: 80%
+        timeout: 80ms
+      - to: search-index
+        timeout: 300ms
+        retry: { attempts: 3, base: 50ms, jitter: full }
+      - to: catalog
+        probability: 30%
+        timeout: 300ms
+  query-understanding:
+    description: Spelling, synonyms and intent model
+    instances: 2
+    concurrency: 3
+    latency: { p50: 5ms, p99: 30ms }
+  search-index:
+    description: Search cluster (Elasticsearch-like)
+    instances: 2
+    concurrency: 9
+    latency: { p50: 15ms, p99: 90ms }
+    queue: { capacity: 200, discipline: adaptive_lifo, timeout: 250ms }
+
+  recommendations:
+    description: Candidate generation and re-ranking
+    instances: 2
+    concurrency: 18
+    latency: { p50: 3ms, p99: 15ms }
+    calls:
+      - to: feature-store
+        timeout: 50ms
+        retry: { attempts: 2, base: 10ms, jitter: full }
+      - to: ranking
+        timeout: 150ms
+        breaker: { failure_rate: 50%, window: 10s, open_for: 5s }
+      - to: catalog
+        probability: 50%
+        timeout: 200ms
+  personalization:
+    description: Per-user page layout
+    instances: 2
+    concurrency: 3
+    latency: { p50: 2ms, p99: 12ms }
+    calls:
+      - to: feature-store
+        timeout: 40ms
+  feature-store:
+    description: Online feature cache; misses read the feature database
+    instances: 3
+    concurrency: 32
+    latency: { p50: 0.5ms, p99: 3ms }
+    cache: { hit_ratio: 85%, key_space: 5000000, miss_target: features-db }
+    calls:
+      - to: features-db
+        timeout: 80ms
+  features-db:
+    description: Feature database
+    instances: 1
+    concurrency: 2
+    latency: { p50: 5ms, p99: 30ms }
+  ranking:
+    description: Ranking model on GPU nodes
+    instances: 2
+    concurrency: 9
+    latency: { p50: 12ms, p99: 60ms }
+    autoscale: { min: 2, max: 6, target_utilization: 60%, provision: 120s }
+
+  pricing:
+    description: Price calculation
+    instances: 2
+    concurrency: 9
+    latency: { p50: 1.5ms, p99: 8ms }
+    calls:
+      - to: pricing-rules
+        timeout: 40ms
+      - to: promotions
+        probability: 30%
+        timeout: 80ms
+  pricing-rules:
+    description: Price rule cache; misses read the pricing database
+    instances: 3
+    concurrency: 32
+    latency: { p50: 0.3ms, p99: 2ms }
+    cache: { hit_ratio: 95%, key_space: 200000, miss_target: pricing-db }
+    calls:
+      - to: pricing-db
+        timeout: 80ms
+        retry: { attempts: 2, base: 10ms, jitter: full }
+  promotions:
+    description: Coupon and campaign eligibility
+    instances: 2
+    concurrency: 3
+    latency: { p50: 2ms, p99: 10ms }
+    calls:
+      - to: pricing-db
+        probability: 50%
+        timeout: 80ms
+        retry: { attempts: 2, base: 10ms, jitter: full }
+  pricing-db:
+    description: Shared pricing database (rules and promotions)
+    instances: 1
+    concurrency: 3
+    latency: { p50: 3ms, p99: 20ms }
+    queue: { capacity: 300 }
+  inventory:
+    description: Stock levels and reservations
+    instances: 2
+    concurrency: 8
+    latency: { p50: 2ms, p99: 10ms }
+    calls:
+      - to: inventory-db
+        timeout: 80ms
+        retry: { attempts: 3, base: 20ms, cap: 100ms, jitter: none }
+  inventory-db:
+    description: Inventory database, single primary
+    instances: 1
+    concurrency: 6
+    latency: { p50: 3ms, p99: 18ms }
+    queue: { capacity: 2000 }
+    contention: { knee: 80%, factor: 0.5 }
+
+  reviews:
+    description: Product reviews with author names
+    instances: 2
+    concurrency: 4
+    latency: { p50: 3ms, p99: 15ms }
+    calls:
+      - to: reviews-db
+        timeout: 100ms
+        retry: { attempts: 2, base: 20ms, jitter: full }
+      - to: users
+        probability: 50%
+        timeout: 100ms
+  reviews-db:
+    description: Reviews database
+    instances: 1
+    concurrency: 4
+    latency: { p50: 4ms, p99: 20ms }
+
+  cart:
+    description: Cart contents, re-priced on every view
+    instances: 2
+    concurrency: 6
+    latency: { p50: 2ms, p99: 10ms }
+    calls:
+      - to: cart-store
+        timeout: 50ms
+        retry: { attempts: 2, base: 10ms, jitter: full }
+      - to: pricing
+        timeout: 150ms
+        retry: { attempts: 2, base: 20ms, jitter: full }
+      - to: inventory
+        probability: 50%
+        timeout: 150ms
+  cart-store:
+    description: Cart key-value store
+    instances: 3
+    concurrency: 32
+    latency: { p50: 0.5ms, p99: 3ms }
+  checkout:
+    description: Order placement; nine downstream calls in sequence
+    instances: 2
+    concurrency: 16
+    latency: { p50: 5ms, p99: 20ms }
+    calls:
+      - to: cart
+        timeout: 300ms
+        retry: { attempts: 2, base: 50ms, jitter: full }
+      - to: pricing
+        timeout: 200ms
+        retry: { attempts: 2, base: 50ms, jitter: full }
+      - to: inventory
+        timeout: 200ms
+        retry: { attempts: 3, base: 50ms, jitter: none }
+      - to: fraud
+        timeout: 400ms
+        breaker: { failure_rate: 50%, window: 10s, open_for: 5s }
+      - to: payments
+        timeout: 1500ms
+        retry: { attempts: 2, base: 200ms, jitter: full }
+      - to: tax
+        timeout: 200ms
+        retry: { attempts: 2, base: 50ms, jitter: full }
+      - to: shipping
+        timeout: 300ms
+        retry: { attempts: 2, base: 50ms, jitter: full }
+      - to: orders
+        timeout: 500ms
+        retry: { attempts: 2, base: 100ms, jitter: full }
+      - to: notifications
+        timeout: 200ms
+  fraud:
+    description: Fraud scoring
+    instances: 2
+    concurrency: 2
+    latency: { p50: 8ms, p99: 40ms }
+    calls:
+      - to: fraud-model
+        timeout: 150ms
+      - to: users
+        probability: 60%
+        timeout: 100ms
+  fraud-model:
+    description: Fraud model server
+    instances: 2
+    concurrency: 2
+    latency: { p50: 15ms, p99: 60ms }
+  payments:
+    description: Payment provider gateway (external, 0.2% errors)
+    instances: 2
+    concurrency: 6
+    latency: { p50: 80ms, p99: 400ms }
+    error_rate: 0.2%
+    calls:
+      - to: payments-db
+        timeout: 100ms
+        retry: { attempts: 2, base: 20ms, jitter: full }
+  payments-db:
+    description: Payment records
+    instances: 1
+    concurrency: 2
+    latency: { p50: 3ms, p99: 15ms }
+  tax:
+    description: Tax calculation (external)
+    instances: 2
+    concurrency: 2
+    latency: { p50: 10ms, p99: 50ms }
+  shipping:
+    description: Shipping quotes
+    instances: 2
+    concurrency: 4
+    latency: { p50: 5ms, p99: 25ms }
+    calls:
+      - to: carriers
+        probability: 70%
+        timeout: 400ms
+        retry: { attempts: 2, base: 100ms, jitter: full }
+  carriers:
+    description: Carrier rate APIs (external, 1% errors)
+    instances: 2
+    concurrency: 3
+    latency: { p50: 60ms, p99: 300ms }
+    error_rate: 1%
+  orders:
+    description: Order records and events
+    instances: 2
+    concurrency: 2
+    latency: { p50: 3ms, p99: 15ms }
+    calls:
+      - to: orders-db
+        timeout: 150ms
+        retry: { attempts: 2, base: 20ms, jitter: full }
+      - to: events
+        timeout: 50ms
+        retry: { attempts: 2, base: 10ms, jitter: full }
+  orders-db:
+    description: Orders database
+    instances: 1
+    concurrency: 2
+    latency: { p50: 4ms, p99: 25ms }
+    contention: { knee: 80%, factor: 0.5 }
+  events:
+    description: Event log (Kafka-like)
+    instances: 3
+    concurrency: 32
+    latency: { p50: 1ms, p99: 8ms }
+  notifications:
+    description: Order notifications
+    instances: 2
+    concurrency: 3
+    latency: { p50: 2ms, p99: 10ms }
+    calls:
+      - to: notification-prefs
+        timeout: 50ms
+      - to: email
+        probability: 60%
+        timeout: 300ms
+      - to: push
+        probability: 40%
+        timeout: 200ms
+  notification-prefs:
+    description: Notification preferences
+    instances: 2
+    concurrency: 32
+    latency: { p50: 1ms, p99: 5ms }
+    calls:
+      - to: users-db
+        probability: 10%
+        timeout: 50ms
+  email:
+    description: Email provider (external)
+    instances: 2
+    concurrency: 2
+    latency: { p50: 40ms, p99: 200ms }
+  push:
+    description: Push provider (external)
+    instances: 2
+    concurrency: 2
+    latency: { p50: 20ms, p99: 100ms }
