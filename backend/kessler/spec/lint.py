@@ -21,6 +21,7 @@ class Finding:
     evidence: dict[str, Any] = field(default_factory=dict)
     fix: str | None = None
     patch: list[dict[str, Any]] = field(default_factory=list)
+    locations: list[str] = field(default_factory=list)
 
     @property
     def id(self) -> str:
@@ -417,12 +418,109 @@ def lint(spec: SystemSpec, analysis: dict[str, Any]) -> list[Finding]:
             )
         )
 
+    out = _consolidate(out)
     out.sort(key=lambda f: (_SEVERITY_ORDER[f.severity], f.rule, f.location))
     return out
 
 
+GROUP_MIN = 4
+
+_GROUPS: dict[str, tuple[str, str, str | None]] = {
+    "timeout-inversion": (
+        "{n} callers give up before the service they call can finish",
+        "Each of these callers stops waiting while its dependency can still be working, often retrying its own "
+        "dependencies. Everything done after a caller has given up is wasted, and that wasted work is what keeps "
+        "a slow dependency busy.",
+        "Propagate deadlines so each hop only spends the time its caller is still willing to wait.",
+    ),
+    "queue-outlives-timeout": (
+        "{n} services queue requests for longer than their callers wait",
+        "A full queue at each of these services holds more work than its callers will wait for, so requests at "
+        "the back are already dead when they start and serving them wastes capacity.",
+        "Drop requests that waited longer than their callers' timeout and serve the newest first under pressure.",
+    ),
+    "no-jitter": (
+        "Retries on {n} edges are synchronised",
+        "Without jitter, requests that failed together retry together, so a brief failure comes back as waves of "
+        "load at fixed intervals.",
+        "Use full jitter on every one of them: sleep a random time between zero and the backoff.",
+    ),
+    "unbudgeted-retries": (
+        "Retries on {n} edges have no budget",
+        "During an incident each of these edges multiplies the load on a dependency that is already struggling.",
+        "Add a 10% retry budget to each of them.",
+    ),
+    "low-headroom": (
+        "{n} services run with little headroom",
+        "Each of these services is busy more than 70% of the time at today's load, so a small slowdown or spike "
+        "pushes it into queueing.",
+        "Add instances so each runs at about 60% utilisation.",
+    ),
+    "cold-cache-collapse": (
+        "{n} caches would overload their backing store if flushed",
+        "If any of these caches is flushed or restarts, its misses exceed what the store behind it can serve, so "
+        "it cannot refill the cache it depends on.",
+        "Budget retries on each miss path and drop stale work at the stores so the caches can re-warm.",
+    ),
+    "autoscale-lag": (
+        "Autoscaling cannot rescue {n} services from a spike",
+        "New instances arrive long after clients have given up, so autoscaling covers sustained growth but not "
+        "bursts; bursts need headroom or load shedding.",
+        None,
+    ),
+    "no-breaker": (
+        "{n} callers keep calling a shared dependency while it is failing",
+        "These retried calls into dependencies shared by several callers have no circuit breaker, so they keep "
+        "sending (and retrying) requests into an outage instead of failing fast.",
+        "Open a breaker at 50% failures over 10 s on each of them and probe again after 5 s.",
+    ),
+    "congestion-collapse": (
+        "{n} services get slower the busier they are",
+        "Past their knee these services take longer per request, so throughput falls exactly when load is "
+        "highest, and a burst can leave them stuck in the slow state.",
+        "Add instances so normal load stays well below each service's knee.",
+    ),
+}
+
+
+def _consolidate(findings: list[Finding]) -> list[Finding]:
+    by_rule: dict[str, list[Finding]] = {}
+    for f in findings:
+        by_rule.setdefault(f.rule, []).append(f)
+    out: list[Finding] = []
+    for rule, group in by_rule.items():
+        if len(group) < GROUP_MIN or rule not in _GROUPS:
+            out.extend(group)
+            continue
+        title, common, fix = _GROUPS[rule]
+        group.sort(key=lambda f: (_SEVERITY_ORDER[f.severity], f.location))
+        places = [f.location for f in group]
+        more = f" and {len(places) - 3} more" if len(places) > 3 else ""
+        out.append(
+            Finding(
+                rule=rule,
+                severity=group[0].severity,
+                title=title.format(n=len(group)),
+                detail=f"{common} Worst first: {', '.join(places[:3])}{more}.",
+                location=f"{len(group)} places",
+                locations=places,
+                evidence={
+                    "count": len(group),
+                    "items": [{"location": f.location, "severity": f.severity, **f.evidence} for f in group[:50]],
+                },
+                fix=fix or group[0].fix,
+                patch=merge_patches(group),
+            )
+        )
+    return out
+
+
 def score(findings: list[Finding]) -> dict[str, Any]:
-    s = max(0, 100 - sum(_SEVERITY_WEIGHT[f.severity] for f in findings))
+    penalty = 0.0
+    for f in findings:
+        spread = min(max(len(f.locations), 1) - 1, 10)
+        penalty += _SEVERITY_WEIGHT[f.severity] * (1 + 0.1 * spread)
+    s = max(0, round(100 - penalty))
     grade = "A" if s >= 90 else "B" if s >= 75 else "C" if s >= 60 else "D" if s >= 40 else "F"
     return {"score": s, "grade": grade}
 

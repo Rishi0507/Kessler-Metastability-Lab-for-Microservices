@@ -21,6 +21,7 @@ export interface Finding {
   title: string;
   detail: string;
   location: string;
+  locations?: string[];
   evidence: Record<string, unknown>;
   fix: string | null;
   patch: PatchOp[];
