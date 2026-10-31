@@ -101,10 +101,9 @@ async def create_run(body: RunIn, user: User, ctx: Ctx, idempotency_key: Idempot
 
 
 async def _owned_run(ctx: Ctx, user_id: str, run_id: str, min_lsn: str | None = None) -> Any:
-    async with ctx.db.read(min_lsn) as conn:
-        row = await conn.fetchrow(
-            "SELECT * FROM runs WHERE id = $1 AND owner_id = $2", parse_uuid(run_id, "run"), uuid.UUID(user_id)
-        )
+    row = await ctx.db.fetchrow_or_primary(
+        min_lsn, "SELECT * FROM runs WHERE id = $1 AND owner_id = $2", parse_uuid(run_id, "run"), uuid.UUID(user_id)
+    )
     if row is None:
         raise ApiError(404, "not_found", "No such run")
     return row

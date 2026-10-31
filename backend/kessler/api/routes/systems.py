@@ -138,21 +138,22 @@ async def create_system(body: SystemIn, request: Request, user: User, ctx: Ctx) 
 
 
 async def _load(ctx: Ctx, user_id: str, system_id: uuid.UUID, version: int | None, min_lsn: str | None):
-    async with ctx.db.read(min_lsn) as conn:
-        sys_row = await conn.fetchrow(
-            "SELECT * FROM systems WHERE id = $1 AND owner_id = $2 AND deleted_at IS NULL",
-            system_id,
-            uuid.UUID(user_id),
-        )
-        if sys_row is None:
-            raise ApiError(404, "not_found", "No such system")
-        ver_row = await conn.fetchrow(
-            "SELECT * FROM system_versions WHERE system_id = $1 AND version = $2",
-            system_id,
-            version or sys_row["latest_version"],
-        )
-        if ver_row is None:
-            raise ApiError(404, "not_found", "No such version")
+    sys_row = await ctx.db.fetchrow_or_primary(
+        min_lsn,
+        "SELECT * FROM systems WHERE id = $1 AND owner_id = $2 AND deleted_at IS NULL",
+        system_id,
+        uuid.UUID(user_id),
+    )
+    if sys_row is None:
+        raise ApiError(404, "not_found", "No such system")
+    ver_row = await ctx.db.fetchrow_or_primary(
+        min_lsn,
+        "SELECT * FROM system_versions WHERE system_id = $1 AND version = $2",
+        system_id,
+        version or sys_row["latest_version"],
+    )
+    if ver_row is None:
+        raise ApiError(404, "not_found", "No such version")
     return sys_row, ver_row
 
 

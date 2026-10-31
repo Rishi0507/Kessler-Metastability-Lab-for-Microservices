@@ -305,12 +305,12 @@ async def list_analyses(
 
 
 async def _owned_analysis(ctx: AppContext, user_id: str, analysis_id: str, min_lsn: str | None = None) -> Any:
-    async with ctx.db.read(min_lsn) as conn:
-        row = await conn.fetchrow(
-            "SELECT * FROM analyses WHERE id = $1 AND owner_id = $2",
-            parse_uuid(analysis_id, "analysis"),
-            uuid.UUID(user_id),
-        )
+    row = await ctx.db.fetchrow_or_primary(
+        min_lsn,
+        "SELECT * FROM analyses WHERE id = $1 AND owner_id = $2",
+        parse_uuid(analysis_id, "analysis"),
+        uuid.UUID(user_id),
+    )
     if row is None:
         raise ApiError(404, "not_found", "No such analysis")
     return row

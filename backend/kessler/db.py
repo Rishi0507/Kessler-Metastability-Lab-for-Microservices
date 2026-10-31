@@ -124,6 +124,15 @@ class Database:
     async def current_lsn(self, conn: asyncpg.Connection) -> str:
         return await conn.fetchval("SELECT pg_current_wal_insert_lsn()::text")
 
+    async def fetchrow_or_primary(self, min_lsn: str | None, query: str, *args: Any) -> asyncpg.Record | None:
+        async with self.read(min_lsn) as conn:
+            row = await conn.fetchrow(query, *args)
+        if row is None and self.replica is not None:
+            DB_READS.labels("primary", "not_found_on_replica").inc()
+            async with self.primary_conn() as conn:
+                row = await conn.fetchrow(query, *args)
+        return row
+
     async def fence(self) -> str:
         async with self.primary_conn() as conn:
             return await self.current_lsn(conn)
