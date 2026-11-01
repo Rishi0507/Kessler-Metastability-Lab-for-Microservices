@@ -371,6 +371,111 @@ class E2E:
         )
         self.check_integrity({"final": final}, samples=4)
 
+    async def infra_failover(self, trigger: dict[str, Any]) -> None:
+        aid = self.start_sweep(trigger, 2)
+        st = self.c.get(f"/api/v1/analyses/{aid}")["stream"]
+        last_id, ids, seen, dupes, reconnects = st["last_id"], [], set(), 0, 0
+        done, stop = asyncio.Event(), asyncio.Event()
+        statuses: dict[int, int] = {}
+        timeline: list[tuple[float, str]] = []
+        t0 = time.monotonic()
+
+        def devstack(*cmd: str) -> None:
+            subprocess.run(
+                [sys.executable, str(ROOT / "scripts" / "devstack.py"), *cmd], capture_output=True, check=False
+            )
+
+        async def reads() -> None:
+            async with httpx.AsyncClient(base_url=self.c.base, cookies=self.c.http.cookies, timeout=10) as ac:
+                while not stop.is_set():
+                    try:
+                        code = (await ac.get(f"/api/v1/systems/{self.system_id}")).status_code
+                    except httpx.HTTPError:
+                        code = 0
+                    statuses[code] = statuses.get(code, 0) + 1
+                    await asyncio.sleep(0.05)
+
+        async def chaos() -> None:
+            async def after(n: int) -> None:
+                while len(seen) < n and not done.is_set():
+                    await asyncio.sleep(0.2)
+
+            await after(4)
+            for name in ("gateway-1", "api-1", "gateway-2"):
+                if done.is_set():
+                    return
+                await asyncio.to_thread(devstack, "kill", name)
+                timeline.append((time.monotonic() - t0, f"killed {name}"))
+                await asyncio.sleep(3)
+                await asyncio.to_thread(devstack, "restart", name)
+                await after(len(seen) + 3)
+
+        async def consume() -> None:
+            nonlocal last_id, dupes, reconnects
+            first = True
+            while not done.is_set() and time.monotonic() - t0 < 1200:
+                try:
+                    if not first:
+                        reconnects += 1
+                        await asyncio.sleep(0.5)
+                    first = False
+                    _, t = await asyncio.to_thread(self.c.post, "/api/v1/realtime/tickets")
+                    uri = self.c.base.replace("http", "ws", 1) + f"/ws?ticket={t['ticket']}"
+                    async with websockets.connect(uri, max_size=8 * 2**20) as ws:
+                        await ws.send(
+                            json.dumps({"op": "sub", "topic": st["topic"], "token": st["token"], "since": last_id})
+                        )
+                        async for raw in ws:
+                            msg = json.loads(raw)
+                            if "event" not in msg:
+                                continue
+                            ids.append(msg["id"])
+                            last_id = msg["id"]
+                            ev = msg["event"]
+                            if ev.get("type") == "task":
+                                key = (ev["cell"], ev["seed"])
+                                dupes += key in seen
+                                seen.add(key)
+                            if ev.get("type") == "status" and ev.get("status") in ("done", "failed", "cancelled"):
+                                done.set()
+                                return
+                except (websockets.ConnectionClosed, OSError, RuntimeError, httpx.HTTPError):
+                    continue
+
+        reader = asyncio.create_task(reads())
+        await asyncio.gather(consume(), chaos())
+        stop.set()
+        await reader
+
+        def key(i: str) -> tuple[int, int]:
+            ms, _, seq = i.partition("-")
+            return int(ms), int(seq or 0)
+
+        ordered = all(key(a) < key(b) for a, b in zip(ids, ids[1:], strict=False))
+        a = self.c.get(f"/api/v1/analyses/{aid}")["analysis"]
+        failed_reads = sum(n for code, n in statuses.items() if code != 200)
+        ok = (
+            a["status"] == "done"
+            and len(seen) == a["sims_done"]
+            and dupes == 0
+            and ordered
+            and reconnects >= 1
+            and failed_reads == 0
+        )
+        self.report(
+            "infra-failover",
+            ok,
+            f"{', '.join(what for _, what in timeline)}: the stream reconnected {reconnects} time(s) and "
+            f"resumed with {len(seen)}/{a['sims_done']} results, {dupes} duplicates, ids "
+            f"{'in order' if ordered else 'OUT OF ORDER'}; {sum(statuses.values())} reads through nginx, "
+            f"{failed_reads} failed",
+            reconnects=reconnects,
+            duplicates=dupes,
+            ordered=ordered,
+            reads=statuses,
+            timeline=timeline,
+        )
+
 
 async def amain(args: argparse.Namespace) -> int:
     e = E2E(args.base, args.template)
@@ -380,6 +485,7 @@ async def amain(args: argparse.Namespace) -> int:
     if args.failover:
         fresh = random.SystemRandom().randint(21, 59)
         await e.failover({"kind": "errors", "target": e.tpl["trigger"].get("target"), "duration_s": fresh})
+        await e.infra_failover({"kind": "errors", "target": e.tpl["trigger"].get("target"), "duration_s": fresh + 1})
     else:
         aid = e.idempotency(trigger)
         f = await e.follow(aid, sample_api=True)
