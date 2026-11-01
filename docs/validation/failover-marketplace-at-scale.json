@@ -1,0 +1,32 @@
+{
+  "spec": {
+    "pass": true,
+    "summary": "45 services; created in 350 ms; 10 findings, grade F; /specs/check p50 201 ms, max 265 ms on 14 KB of YAML",
+    "services": 45,
+    "create_ms": 349.8208999517374,
+    "check_p50_ms": 200.62350001535378,
+    "check_max_ms": 264.9882999830879
+  },
+  "failover": {
+    "pass": true,
+    "summary": "killed worker-1 at 12 s then killed scheduler-2 (the leader) at 25 s; sweep done at 191 s with 50 simulations (0 from cache), 0 duplicates, longest pause 14 s; leader afterwards: scheduler-1",
+    "timeline": [
+      [
+        12.48499999998603,
+        "killed worker-1"
+      ],
+      [
+        24.76600000000326,
+        "killed scheduler-2 (the leader)"
+      ]
+    ],
+    "sims": 50,
+    "longest_pause_s": 14.469000000040978,
+    "new_leader": "scheduler-1"
+  },
+  "integrity": {
+    "pass": true,
+    "summary": "4 stored simulations recomputed locally: identical",
+    "mismatches": []
+  }
+}

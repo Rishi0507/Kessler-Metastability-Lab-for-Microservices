@@ -1,0 +1,51 @@
+{
+  "spec": {
+    "pass": true,
+    "summary": "45 services; created in 200 ms; 10 findings, grade F; /specs/check p50 141 ms, max 399 ms on 14 KB of YAML",
+    "services": 45,
+    "create_ms": 200.33870002953336,
+    "check_p50_ms": 141.10200002323836,
+    "check_max_ms": 398.59899994917214
+  },
+  "idempotency": {
+    "pass": true,
+    "summary": "retried POST with the same key returned the same analysis"
+  },
+  "sweep": {
+    "pass": true,
+    "summary": "done: 50 simulations (58% skipped by adaptive search) in 73 s; first result after 6.9 s; 50 task events, 0 duplicates",
+    "sims": 50,
+    "total_s": 73.10899999999674,
+    "first_s": 6.89100000000326,
+    "duplicates": 0,
+    "headline": "Tips over at 1.13\u00d7 today's traffic"
+  },
+  "api-latency": {
+    "pass": true,
+    "summary": "GET /systems/:id while the sweep ran: p50 22 ms, p95 28 ms, p99 68 ms over 248 requests",
+    "p50_ms": 22.40534996963106,
+    "p95_ms": 27.79030002420768,
+    "p99_ms": 67.80039996374398,
+    "n": 248
+  },
+  "integrity": {
+    "pass": true,
+    "summary": "4 stored simulations recomputed locally: identical",
+    "mismatches": []
+  },
+  "cache": {
+    "pass": true,
+    "summary": "re-run: 50/50 simulations from the cache in 2.2 s",
+    "cached": 50,
+    "sims": 50,
+    "total_s": 2.219000000040978
+  },
+  "live": {
+    "pass": true,
+    "summary": "9 messages (9 frames) in 2 s, 4.3 messages/s, median message 17.6 KB; fault command acknowledged",
+    "messages": 9,
+    "frames": 9,
+    "median_message_bytes": 18035,
+    "acked": true
+  }
+}
