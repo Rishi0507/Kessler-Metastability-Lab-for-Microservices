@@ -29,6 +29,7 @@ class SweepParams:
     trigger_start_s: float = 60.0
     observe_s: float = 120.0
     base_seed: int = 1
+    recovery_extend_s: float = 0.0
 
     @property
     def n_cols(self) -> int:
@@ -76,6 +77,7 @@ class SweepParams:
             "warmup_s": self.warmup_s,
             "load": self.loads[col],
             "faults": [self.fault(row)],
+            **({"recovery_extend_s": self.recovery_extend_s} if self.recovery_extend_s else {}),
         }
 
     def as_dict(self) -> dict[str, Any]:
@@ -90,6 +92,7 @@ class SweepParams:
             "trigger_start_s": self.trigger_start_s,
             "observe_s": self.observe_s,
             "base_seed": self.base_seed,
+            "recovery_extend_s": self.recovery_extend_s,
         }
 
     @staticmethod
@@ -105,6 +108,7 @@ class SweepParams:
             trigger_start_s=float(d.get("trigger_start_s", 60.0)),
             observe_s=float(d.get("observe_s", 120.0)),
             base_seed=int(d.get("base_seed", 1)),
+            recovery_extend_s=float(d.get("recovery_extend_s", 0.0)),
         )
 
 
@@ -281,6 +285,7 @@ def default_params(
         axis2=axis2,
         seeds=seeds,
         mode=mode,  # type: ignore[arg-type]
+        recovery_extend_s=600.0,
     )
 
 

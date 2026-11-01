@@ -244,6 +244,8 @@ def build_engine_spec(system: dict[str, Any], scenario: dict[str, Any]) -> dict[
     spec["faults"] = list(scenario.get("faults", []))
     if "max_events" in scenario:
         spec["limits"] = {"max_events": int(scenario["max_events"])}
+    if scenario.get("recovery_extend_s"):
+        spec["recovery"] = {"extend_s": float(scenario["recovery_extend_s"])}
     return spec
 
 

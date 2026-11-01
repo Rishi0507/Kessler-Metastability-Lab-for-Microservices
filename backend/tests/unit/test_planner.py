@@ -210,3 +210,15 @@ def test_findings_distinguish_capacity_limits_and_print_readable_loads():
     }
     out = summarize(p, verdicts, {}, boundary(p, verdicts))
     assert out["findings"][0]["rule"] == "no-tipping-before-capacity"
+
+
+def test_new_sweeps_observe_slow_recoveries_and_old_ones_keep_their_semantics():
+    from kessler.spec import build_engine_spec
+
+    p = default_params({"kind": "latency", "target": "db", "duration_s": 20}, max_load_multiplier=2.0)
+    sc = p.scenario(0, 0)
+    assert sc["recovery_extend_s"] == 600.0
+    assert build_engine_spec({"traffic": {}}, sc)["recovery"] == {"extend_s": 600.0}
+    old = {k: v for k, v in p.as_dict().items() if k != "recovery_extend_s"}
+    old_sc = SweepParams.from_dict(old).scenario(0, 0)
+    assert "recovery_extend_s" not in old_sc and "recovery" not in build_engine_spec({"traffic": {}}, old_sc)
