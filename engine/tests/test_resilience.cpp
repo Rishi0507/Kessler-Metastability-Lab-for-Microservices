@@ -210,3 +210,39 @@ TEST_CASE(live_commands_inject_and_clear_faults) {
   CHECK(!sim.command("not json").empty());
   CHECK(sim.now() >= 30.0 - 1e-9);
 }
+
+namespace {
+
+std::string slow_refill_spec(double extend_s) {
+  return R"({"seed":3,"horizon_s":260,"warmup_s":30,
+    "recovery":{"extend_s":)" + std::to_string(extend_s) + R"(},
+    "traffic":{"rps":1500,"entry":"api","client":{"timeout_ms":1000}},
+    "services":[
+      {"name":"api","instances":4,"concurrency":64,"service_time":{"dist":"lognormal","p50_ms":1,"p99_ms":4},
+       "calls":[{"to":"cache","timeout_ms":400}]},
+      {"name":"cache","instances":2,"concurrency":128,"service_time":{"dist":"lognormal","p50_ms":0.3,"p99_ms":1},
+       "cache":{"hit_ratio":0.95,"key_space":600000,"miss_target":"db"},
+       "calls":[{"to":"db","timeout_ms":200,"retry":{"max_attempts":2,"base_ms":10,"jitter":"full"},
+                 "budget":{"ratio":0.1,"min_per_s":10}}]},
+      {"name":"db","instances":1,"concurrency":8,"queue":{"capacity":1000,"discipline":"adaptive_lifo","timeout_ms":200},
+       "service_time":{"dist":"lognormal","p50_ms":8,"p99_ms":25}}],
+    "faults":[{"kind":"cache_flush","target":"cache","start_s":60}]})";
+}
+
+}
+
+TEST_CASE(slow_but_steady_recovery_is_observed_to_the_end) {
+  CHECK(run(slow_refill_spec(0)).verdict == Verdict::Metastable);
+  const RunSummary extended = run(slow_refill_spec(900));
+  CHECK(extended.verdict == Verdict::Recovered);
+  CHECK(extended.recovery_s > 60.0);
+}
+
+TEST_CASE(a_genuinely_stuck_run_gets_no_extra_time) {
+  std::string spec = storm_spec(1.0, false);
+  spec.insert(1, R"("recovery":{"extend_s":900},)");
+  Simulator sim(parse_spec_text(spec));
+  sim.run();
+  CHECK(sim.summary().verdict == Verdict::Metastable);
+  CHECK(sim.spec().horizon_s == 200.0);
+}

@@ -208,6 +208,7 @@ struct Simulator::Impl {
 
   std::vector<FaultRt> faults;
   double trigger_start = kInf, trigger_end = -kInf;
+  double extended_s = 0;
 
   std::string frames;
   bool frames_open = false;
@@ -1276,6 +1277,30 @@ struct Simulator::Impl {
     if (t + spec.window_s <= spec.horizon_s + kEps) push(t + spec.window_s, EV_WINDOW);
   }
 
+  bool extend_if_recovering() {
+    constexpr double kStepS = 60.0, kSpanS = 30.0, kMinGain = 0.02;
+    if (spec.recovery_extend_s <= 0 || trigger_start == kInf) return false;
+    if (extended_s + kStepS > spec.recovery_extend_s + kEps) return false;
+    const size_t span = static_cast<size_t>(std::ceil(kSpanS / spec.window_s - kEps));
+    const size_t n = series.size();
+    if (span == 0 || n < 2 * span) return false;
+    if (summarize().verdict != Verdict::Metastable) return false;
+    auto ratio = [&](size_t from, size_t to) {
+      double good = 0, offered = 0;
+      for (size_t i = from; i < to; ++i) {
+        good += series[i].good;
+        offered += series[i].offered;
+      }
+      return offered > 0 ? std::min(1.0, good / offered) : 1.0;
+    };
+    if (ratio(n - span, n) - ratio(n - 2 * span, n - span) < kMinGain) return false;
+    extended_s += kStepS;
+    spec.horizon_s += kStepS;
+    push(series.back().t + spec.window_s, EV_WINDOW);
+    push(spec.horizon_s + kEps, EV_END);
+    return true;
+  }
+
   void finish() {
     if (finished) return;
     finished = true;
@@ -1295,7 +1320,9 @@ struct Simulator::Impl {
       case EV_FAULT_END: on_fault_end(e.a); break;
       case EV_AUTOSCALE: on_autoscale(static_cast<int>(e.a)); break;
       case EV_INSTANCE_UP: on_instance_up(static_cast<int>(e.a)); break;
-      case EV_END: finish(); break;
+      case EV_END:
+        if (!extend_if_recovering()) finish();
+        break;
       default: break;
     }
   }
@@ -1441,6 +1468,7 @@ struct Simulator::Impl {
     w.key("assessable").boolean(r.assessable);
     w.key("truncated").boolean(r.truncated);
     w.key("sim_time_s").number(now, 3);
+    w.key("extended_s").number(extended_s, 1);
     w.key("events").integer(static_cast<int64_t>(r.events));
     w.key("wall_ms").number(r.wall_ms, 2);
     w.key("events_per_s").number(r.wall_ms > 0 ? r.events / (r.wall_ms / 1000.0) : 0.0, 0);

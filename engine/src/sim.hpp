@@ -11,7 +11,7 @@
 
 namespace kessler {
 
-inline constexpr const char* kEngineVersion = "0.1.0";
+inline constexpr const char* kEngineVersion = "0.2.0";
 
 struct ServiceTotals {
   uint64_t arrivals = 0, ok = 0, err = 0, shed = 0, dropped = 0, wasted = 0;

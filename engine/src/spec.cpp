@@ -323,6 +323,8 @@ Spec parse_spec(const json::Value& root) {
     s.recovery_hold_s = num(*rec, "hold_s", 10, P + ".recovery");
     check_range(s.recovery_tolerance, 0.0, 0.9, P + ".recovery.tolerance");
     check_range(s.recovery_hold_s, 0.0, 600.0, P + ".recovery.hold_s");
+    s.recovery_extend_s = num(*rec, "extend_s", 0, P + ".recovery");
+    check_range(s.recovery_extend_s, 0.0, 3600.0, P + ".recovery.extend_s");
   }
 
   const json::Value& svcs = require(root, "services", P);

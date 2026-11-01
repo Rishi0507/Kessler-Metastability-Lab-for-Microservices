@@ -149,6 +149,7 @@ struct Spec {
   uint64_t max_events = 400000000ull;
   double recovery_tolerance = 0.1;
   double recovery_hold_s = 10.0;
+  double recovery_extend_s = 0.0;
 
   int find_service(std::string_view name) const;
 };

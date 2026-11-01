@@ -48,7 +48,7 @@ TEST_CASE(capi_reports_errors_without_throwing) {
   CHECK(ks_analyze("[]", 2, &err) == nullptr);
   CHECK(err != nullptr);
   ks_free(err);
-  CHECK(std::strcmp(ks_version(), "0.1.0") == 0);
+  CHECK(std::strcmp(ks_version(), "0.2.0") == 0);
 }
 
 TEST_CASE(capi_one_shot_run_and_analyze) {
