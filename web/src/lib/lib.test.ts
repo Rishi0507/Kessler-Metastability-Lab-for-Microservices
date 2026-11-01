@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { aggregate, cellState } from "./cells";
-import { axisValue, fmtMs, fmtMult, fmtPct, triggerPhrase } from "./format";
+import { axisValue, fmtMs, fmtMult, fmtPct, fmtSeconds, triggerPhrase } from "./format";
 import { layeredLayout } from "./layout";
 import { backoffMs, RetryBudget } from "./retry";
 import type { SimSummary } from "./types";
@@ -113,5 +113,13 @@ describe("layered call-graph layout", () => {
   it("orders a layer by its callers' positions", () => {
     const { slot } = layeredLayout(topo);
     expect(slot.get("db")).toBe(slot.get("catalog"));
+  });
+});
+
+describe("durations", () => {
+  it("never shows 60 seconds", () => {
+    expect(fmtSeconds(479.6)).toBe("8 min 0 s");
+    expect(fmtSeconds(450)).toBe("7 min 30 s");
+    expect(fmtSeconds(42)).toBe("42 s");
   });
 });

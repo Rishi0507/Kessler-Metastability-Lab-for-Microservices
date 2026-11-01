@@ -19,7 +19,8 @@ export function fmtSeconds(s: number | null | undefined): string {
   if (s === null || s === undefined || !Number.isFinite(s)) return " - ";
   if (s < 1) return `${(s * 1000).toFixed(0)} ms`;
   if (s < 90) return `${s.toFixed(s < 10 ? 1 : 0)} s`;
-  return `${Math.floor(s / 60)} min ${Math.round(s % 60)} s`;
+  const total = Math.round(s);
+  return `${Math.floor(total / 60)} min ${total % 60} s`;
 }
 
 export function fmtCount(n: number | null | undefined): string {
