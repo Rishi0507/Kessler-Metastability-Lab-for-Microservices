@@ -167,6 +167,16 @@ def kill_hard(pid: int) -> None:
     subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)] if WIN else ["kill", "-9", str(pid)], capture_output=True)
 
 
+def pg_ctl_start(data_dir: Path, log_name: str) -> None:
+    with open(LOGS / "pg-ctl.log", "ab") as ctl_log:
+        run(
+            [pg("pg_ctl"), "-D", str(data_dir), "-l", str(LOGS / log_name), "-w", "start"],
+            stdin=subprocess.DEVNULL,
+            stdout=ctl_log,
+            stderr=subprocess.STDOUT,
+        )
+
+
 def pg_setup() -> None:
     primary, replica = DATA / "pg" / "primary", DATA / "pg" / "replica"
     if not (primary / "PG_VERSION").exists():
@@ -201,10 +211,7 @@ def pg_setup() -> None:
         )
     if not port_open(PG_PORT):
         log("starting Postgres primary")
-        run(
-            [pg("pg_ctl"), "-D", str(primary), "-l", str(LOGS / "pg-primary.log"), "-w", "start"],
-            stdout=subprocess.DEVNULL,
-        )
+        pg_ctl_start(primary, "pg-primary.log")
     bootstrap = (
         "import asyncio, asyncpg\n"
         "async def m():\n"
@@ -244,10 +251,7 @@ def pg_setup() -> None:
             f.write(f"port = {PG_REPLICA_PORT}\n")
     if not port_open(PG_REPLICA_PORT):
         log("starting Postgres replica")
-        run(
-            [pg("pg_ctl"), "-D", str(replica), "-l", str(LOGS / "pg-replica.log"), "-w", "start"],
-            stdout=subprocess.DEVNULL,
-        )
+        pg_ctl_start(replica, "pg-replica.log")
 
 
 def pg_stop() -> None:
@@ -528,6 +532,15 @@ def restart(args: argparse.Namespace) -> None:
     log(f"restarted {len(picked)} process(es)")
 
 
+def kill(args: argparse.Namespace) -> None:
+    state = load_state()
+    proc = state.get(args.name or "")
+    if proc is None or not alive(proc):
+        sys.exit(f"no running process named {args.name!r}")
+    kill_hard(int(proc["pid"]))
+    log(f"killed {args.name} (pid {int(proc['pid'])}) without letting it drain")
+
+
 def status(args: argparse.Namespace) -> None:
     state = load_state()
     rows = [
@@ -555,7 +568,7 @@ def logs(args: argparse.Namespace) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["up", "down", "status", "logs", "restart"])
+    ap.add_argument("command", choices=["up", "down", "status", "logs", "restart", "kill"])
     ap.add_argument("name", nargs="?", help="process (or group, for `restart`) name")
     ap.add_argument("-n", type=int, default=60, help="lines for `logs`")
     ap.add_argument("--api", type=int, default=3)
@@ -565,7 +578,7 @@ def main() -> None:
     ap.add_argument("--no-replica", action="store_true")
     ap.add_argument("-d", "--detach", action="store_true", help="start everything and return immediately")
     args = ap.parse_args()
-    {"up": up, "down": down, "status": status, "logs": logs, "restart": restart}[args.command](args)
+    {"up": up, "down": down, "status": status, "logs": logs, "restart": restart, "kill": kill}[args.command](args)
 
 
 if __name__ == "__main__":
