@@ -1,0 +1,2493 @@
+{
+  "dynamodb_2015": {
+    "settings": 64,
+    "reproduce_facts": 35,
+    "facts": [
+      {
+        "params": [
+          100,
+          2.0,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          2.0,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          2.0,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          2.0,
+          0.6,
+          6
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          2.5,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          2.5,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          2.5,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          2.5,
+          0.6,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          3.0,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          3.0,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          3.0,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          3.0,
+          0.6,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          3.5,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          3.5,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          3.5,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          100,
+          3.5,
+          0.6,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          2.0,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          2.0,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          2.0,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          2.0,
+          0.6,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          2.5,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          2.5,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          2.5,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          2.5,
+          0.6,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          3.0,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          3.0,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          3.0,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          3.0,
+          0.6,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          3.5,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          3.5,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          3.5,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          150,
+          3.5,
+          0.6,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          2.0,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          2.0,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          2.0,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          2.0,
+          0.6,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          2.5,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          2.5,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          2.5,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          2.5,
+          0.6,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          3.0,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          3.0,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          3.0,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          3.0,
+          0.6,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          3.5,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          3.5,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          3.5,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          200,
+          3.5,
+          0.6,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          2.0,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "recovers",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          2.0,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          2.0,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          2.0,
+          0.6,
+          6
+        ],
+        "before": "stuck",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          2.5,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          2.5,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          2.5,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          2.5,
+          0.6,
+          6
+        ],
+        "before": "stuck",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          3.0,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          3.0,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          3.0,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          3.0,
+          0.6,
+          6
+        ],
+        "before": "stuck",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          3.5,
+          0.4,
+          3
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          3.5,
+          0.4,
+          6
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          3.5,
+          0.6,
+          3
+        ],
+        "before": "recovers",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      },
+      {
+        "params": [
+          300,
+          3.5,
+          0.6,
+          6
+        ],
+        "before": "stuck",
+        "after": "stuck",
+        "after_baseline": "recovers"
+      }
+    ],
+    "predictions": [
+      {
+        "params": [
+          100,
+          2.5,
+          0.6,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.998,
+          0.0,
+          1.0,
+          1.004
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          100,
+          3.0,
+          0.6,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.995,
+          0.0,
+          1.0,
+          0.999
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          100,
+          3.5,
+          0.4,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "client gives up on metadata before metadata can finish",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.99,
+          0.0,
+          1.0,
+          0.99
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "recovers",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          100,
+          3.5,
+          0.6,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.988,
+          0.0,
+          1.0,
+          0.997
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          150,
+          2.0,
+          0.6,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          1.001,
+          0.0,
+          1.0,
+          0.999
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          150,
+          2.5,
+          0.4,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.998,
+          0.0,
+          1.0,
+          0.998
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          150,
+          2.5,
+          0.6,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.999,
+          0.0,
+          1.0,
+          1.0
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          150,
+          3.0,
+          0.4,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.997,
+          0.0,
+          1.0,
+          0.998
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          150,
+          3.0,
+          0.6,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.998,
+          0.0,
+          1.0,
+          0.995
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          150,
+          3.5,
+          0.4,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "client gives up on metadata before metadata can finish",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.995,
+          0.0,
+          1.0,
+          0.996
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          150,
+          3.5,
+          0.6,
+          3
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.994,
+          0.0,
+          1.0,
+          0.995
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          150,
+          3.5,
+          0.6,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.994,
+          0.0,
+          1.0,
+          0.996
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "stuck",
+          "lower renewal rate (half)": "stuck",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          200,
+          2.0,
+          0.4,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          1.0,
+          0.0,
+          1.0,
+          0.999
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          200,
+          2.0,
+          0.6,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.998,
+          0.0,
+          1.0,
+          0.999
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          200,
+          2.5,
+          0.4,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.998,
+          0.0,
+          1.0,
+          0.998
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          200,
+          2.5,
+          0.6,
+          3
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.998,
+          0.0,
+          1.0,
+          0.998
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          200,
+          2.5,
+          0.6,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.998,
+          0.0,
+          1.0,
+          0.999
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "stuck",
+          "lower renewal rate (half)": "stuck",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          200,
+          3.0,
+          0.4,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.999,
+          0.0,
+          1.0,
+          0.998
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          200,
+          3.0,
+          0.6,
+          3
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.996,
+          0.0,
+          1.0,
+          0.998
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          200,
+          3.0,
+          0.6,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.996,
+          0.0,
+          1.0,
+          0.997
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "stuck",
+          "lower renewal rate (half)": "stuck",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          200,
+          3.5,
+          0.4,
+          3
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "client gives up on metadata before metadata can finish",
+          "Retries from client to metadata are synchronised"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.996,
+          0.0,
+          1.0,
+          0.995
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          200,
+          3.5,
+          0.4,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "client gives up on metadata before metadata can finish",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.996,
+          0.0,
+          1.0,
+          0.997
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "stuck",
+          "lower renewal rate (half)": "stuck",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          200,
+          3.5,
+          0.6,
+          3
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.998,
+          0.0,
+          1.0,
+          0.994
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          200,
+          3.5,
+          0.6,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.998,
+          0.0,
+          1.0,
+          0.995
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "stuck",
+          "lower renewal rate (half)": "stuck",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          300,
+          2.0,
+          0.4,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.999,
+          0.0,
+          1.0,
+          0.997
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          300,
+          2.0,
+          0.6,
+          3
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.997,
+          0.0,
+          1.0,
+          0.997
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          300,
+          2.5,
+          0.4,
+          3
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.997,
+          0.0,
+          1.0,
+          0.997
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          300,
+          2.5,
+          0.4,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.997,
+          0.0,
+          1.0,
+          0.996
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "stuck",
+          "lower renewal rate (half)": "stuck",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          300,
+          2.5,
+          0.6,
+          3
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.996,
+          0.0,
+          1.0,
+          0.997
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          300,
+          3.0,
+          0.4,
+          3
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.996,
+          0.0,
+          1.0,
+          0.996
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          300,
+          3.0,
+          0.4,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.996,
+          0.0,
+          1.0,
+          0.996
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "stuck",
+          "lower renewal rate (half)": "stuck",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          300,
+          3.0,
+          0.6,
+          3
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "Retries from client to metadata are synchronised",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.994,
+          0.0,
+          1.0,
+          0.996
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          300,
+          3.5,
+          0.4,
+          3
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "client gives up on metadata before metadata can finish",
+          "Retries from client to metadata are synchronised"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.993,
+          0.0,
+          1.0,
+          0.992
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "recovers",
+          "lower renewal rate (half)": "recovers",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          300,
+          3.5,
+          0.4,
+          6
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "client gives up on metadata before metadata can finish",
+          "Retries from client to metadata are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 metadata"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.993,
+          0.0,
+          1.0,
+          0.992
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "stuck",
+          "lower renewal rate (half)": "stuck",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      },
+      {
+        "params": [
+          300,
+          3.5,
+          0.6,
+          3
+        ],
+        "flagged": [
+          "metadata's queue holds requests longer than callers wait",
+          "metadata runs at 73% of capacity at baseline",
+          "Retries from client to metadata are synchronised",
+          "client gives up on metadata before metadata can finish"
+        ],
+        "stuck_before_pause": true,
+        "healthy_after_resume": true,
+        "ratios": [
+          0.991,
+          0.0,
+          1.0,
+          0.994
+        ],
+        "fixes": {
+          "more metadata capacity (2x)": "stuck",
+          "lower renewal rate (half)": "stuck",
+          "longer timeout (3x)": "stuck",
+          "longer timeout (3x), queue drops stale requests": "recovers",
+          "Kessler's suggested fixes": "recovers"
+        }
+      }
+    ],
+    "summary": {
+      "settings": 64,
+      "reproduce_facts": 35,
+      "checks": {
+        "static check flags the risk before simulating": 35,
+        "stuck until requests are paused": 35,
+        "pause then resume ends the failure (the engineers' fix)": 35,
+        "prevents it: more metadata capacity (2x)": 26,
+        "prevents it: lower renewal rate (half)": 26,
+        "prevents it: longer timeout (3x)": 1,
+        "prevents it: longer timeout (3x), queue drops stale requests": 35,
+        "prevents it: Kessler's suggested fixes": 35
+      }
+    }
+  },
+  "facebook_2010": {
+    "settings": 24,
+    "reproduce_facts": 18,
+    "facts": [
+      {
+        "params": [
+          1500,
+          2,
+          20000,
+          1
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          1500,
+          2,
+          20000,
+          3
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          1500,
+          2,
+          200000,
+          1
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          1500,
+          2,
+          200000,
+          3
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          1500,
+          4,
+          20000,
+          1
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          1500,
+          4,
+          20000,
+          3
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          1500,
+          4,
+          200000,
+          1
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          1500,
+          4,
+          200000,
+          3
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          1500,
+          8,
+          20000,
+          1
+        ],
+        "baseline": "recovers",
+        "flush": "recovers"
+      },
+      {
+        "params": [
+          1500,
+          8,
+          20000,
+          3
+        ],
+        "baseline": "recovers",
+        "flush": "recovers"
+      },
+      {
+        "params": [
+          1500,
+          8,
+          200000,
+          1
+        ],
+        "baseline": "recovers",
+        "flush": "recovers"
+      },
+      {
+        "params": [
+          1500,
+          8,
+          200000,
+          3
+        ],
+        "baseline": "recovers",
+        "flush": "recovers"
+      },
+      {
+        "params": [
+          3000,
+          2,
+          20000,
+          1
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          3000,
+          2,
+          20000,
+          3
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          3000,
+          2,
+          200000,
+          1
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          3000,
+          2,
+          200000,
+          3
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          3000,
+          4,
+          20000,
+          1
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          3000,
+          4,
+          20000,
+          3
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          3000,
+          4,
+          200000,
+          1
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          3000,
+          4,
+          200000,
+          3
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          3000,
+          8,
+          20000,
+          1
+        ],
+        "baseline": "recovers",
+        "flush": "recovers"
+      },
+      {
+        "params": [
+          3000,
+          8,
+          20000,
+          3
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      },
+      {
+        "params": [
+          3000,
+          8,
+          200000,
+          1
+        ],
+        "baseline": "recovers",
+        "flush": "recovers"
+      },
+      {
+        "params": [
+          3000,
+          8,
+          200000,
+          3
+        ],
+        "baseline": "recovers",
+        "flush": "stuck"
+      }
+    ],
+    "predictions": [
+      {
+        "params": [
+          1500,
+          2,
+          20000,
+          1
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.013,
+          1.0,
+          0.026
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 160
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          1500,
+          2,
+          20000,
+          3
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait",
+          "web gives up on config-cache before config-cache can finish",
+          "Retries from config-cache to config-db are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 web \u2192 config-cache \u2192 config-db"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.013,
+          1.0,
+          0.026
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 160
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          1500,
+          2,
+          200000,
+          1
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": false,
+        "all_at_once": [
+          1.0,
+          0.001,
+          1.0,
+          0.003
+        ],
+        "gradually": {
+          "recovered": false,
+          "seconds_to_full_traffic": null,
+          "level_reached": 0.253
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          1500,
+          2,
+          200000,
+          3
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait",
+          "web gives up on config-cache before config-cache can finish",
+          "Retries from config-cache to config-db are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 web \u2192 config-cache \u2192 config-db"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": false,
+        "all_at_once": [
+          1.0,
+          0.001,
+          1.0,
+          0.002
+        ],
+        "gradually": {
+          "recovered": false,
+          "seconds_to_full_traffic": null,
+          "level_reached": 0.57
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          1500,
+          4,
+          20000,
+          1
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.039,
+          1.0,
+          0.078
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 160
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          1500,
+          4,
+          20000,
+          3
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait",
+          "web gives up on config-cache before config-cache can finish",
+          "Retries from config-cache to config-db are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 web \u2192 config-cache \u2192 config-db"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.039,
+          1.0,
+          0.082
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 160
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          1500,
+          4,
+          200000,
+          1
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.004,
+          1.0,
+          0.008
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 560
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          1500,
+          4,
+          200000,
+          3
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait",
+          "web gives up on config-cache before config-cache can finish",
+          "Retries from config-cache to config-db are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 web \u2192 config-cache \u2192 config-db"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.004,
+          1.0,
+          0.008
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 680
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          3000,
+          2,
+          20000,
+          1
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.012,
+          1.0,
+          0.022
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 240
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          3000,
+          2,
+          20000,
+          3
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait",
+          "web gives up on config-cache before config-cache can finish",
+          "Retries from config-cache to config-db are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 web \u2192 config-cache \u2192 config-db"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.006,
+          1.0,
+          0.011
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 360
+        },
+        "fix_database_sized_for_cold_traffic": "stuck",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          3000,
+          2,
+          200000,
+          1
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": false,
+        "all_at_once": [
+          1.0,
+          0.002,
+          1.0,
+          0.002
+        ],
+        "gradually": {
+          "recovered": false,
+          "seconds_to_full_traffic": null,
+          "level_reached": 0.169
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "mixed"
+      },
+      {
+        "params": [
+          3000,
+          2,
+          200000,
+          3
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait",
+          "web gives up on config-cache before config-cache can finish",
+          "Retries from config-cache to config-db are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 web \u2192 config-cache \u2192 config-db"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": false,
+        "all_at_once": [
+          1.0,
+          0.0,
+          1.0,
+          0.001
+        ],
+        "gradually": {
+          "recovered": false,
+          "seconds_to_full_traffic": null,
+          "level_reached": 0.05
+        },
+        "fix_database_sized_for_cold_traffic": "stuck",
+        "fix_kessler_suggested": "mixed"
+      },
+      {
+        "params": [
+          3000,
+          4,
+          20000,
+          1
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.024,
+          1.0,
+          0.05
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 160
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          3000,
+          4,
+          20000,
+          3
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait",
+          "web gives up on config-cache before config-cache can finish",
+          "Retries from config-cache to config-db are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 web \u2192 config-cache \u2192 config-db"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.008,
+          1.0,
+          0.016
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 160
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          3000,
+          4,
+          200000,
+          1
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.003,
+          1.0,
+          0.005
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 960
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          3000,
+          4,
+          200000,
+          3
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait",
+          "web gives up on config-cache before config-cache can finish",
+          "Retries from config-cache to config-db are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 web \u2192 config-cache \u2192 config-db"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.001,
+          1.0,
+          0.002
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 1480
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          3000,
+          8,
+          20000,
+          3
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait",
+          "web gives up on config-cache before config-cache can finish",
+          "Retries from config-cache to config-db are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 web \u2192 config-cache \u2192 config-db"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 160
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      },
+      {
+        "params": [
+          3000,
+          8,
+          200000,
+          3
+        ],
+        "flagged": [
+          "A cold config-cache would overload config-db",
+          "config-db's queue holds requests longer than callers wait",
+          "web gives up on config-cache before config-cache can finish",
+          "Retries from config-cache to config-db are synchronised",
+          "Retries multiply to 6\u00d7 along client \u2192 web \u2192 config-cache \u2192 config-db"
+        ],
+        "all_at_once_recovers": false,
+        "gradual_recovers": true,
+        "all_at_once": [
+          1.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        "gradually": {
+          "recovered": true,
+          "seconds_to_full_traffic": 400
+        },
+        "fix_database_sized_for_cold_traffic": "recovers",
+        "fix_kessler_suggested": "recovers"
+      }
+    ],
+    "summary": {
+      "settings": 24,
+      "reproduce_facts": 18,
+      "checks": {
+        "static check flags the risk before simulating": 18,
+        "restoring all traffic at once collapses it again": 18,
+        "letting users back while the database copes recovers": 14,
+        "a database sized for cold traffic prevents it": 16,
+        "Kessler's suggested fixes prevent it": 16
+      }
+    }
+  }
+}
