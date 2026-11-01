@@ -53,6 +53,14 @@ _META: dict[str, dict[str, Any]] = {
         "tags": ("45 services", "shared databases", "fan-out"),
         "trigger": {"kind": "latency", "target": "inventory-db", "duration_s": 20},
     },
+    "aws-dynamodb-2015": {
+        "tags": ("real outage", "retry storm", "timeouts"),
+        "trigger": {"kind": "latency", "target": "metadata", "duration_s": 10},
+    },
+    "facebook-2010": {
+        "tags": ("real outage", "cold cache", "feedback loop"),
+        "trigger": {"kind": "cache_flush", "target": "config-cache", "duration_s": 0},
+    },
 }
 
 

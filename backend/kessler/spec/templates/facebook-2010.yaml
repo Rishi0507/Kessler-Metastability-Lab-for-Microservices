@@ -1,0 +1,39 @@
+name: Facebook outage, 2010
+description: >
+  A reconstruction of facebook.com's September 2010 outage, from Facebook's public post
+  (engineering.fb.com, "More details on today's outage"). Web servers read a configuration
+  value through a cache. When the stored value was suddenly treated as invalid, every
+  server went to the same database cluster at once; errors kept the cache from refilling,
+  and the loop only ended when the site was taken down and users were let back in slowly.
+  The post gives no numbers; the rates and sizes here are illustrative.
+traffic:
+  rps: 1500
+  entry: web
+  client:
+    timeout: 2s
+    retry: { attempts: 2, base: 200ms, jitter: full }
+services:
+  web:
+    description: Web tier
+    instances: 6
+    concurrency: 64
+    latency: { p50: 3ms, p99: 15ms }
+    calls:
+      - to: config-cache
+        timeout: 300ms
+  config-cache:
+    description: Cache in front of the configuration database
+    instances: 4
+    concurrency: 256
+    latency: { p50: 0.3ms, p99: 2ms }
+    cache: { hit_ratio: 99%, key_space: 20000, miss_target: config-db }
+    calls:
+      - to: config-db
+        timeout: 250ms
+        retry: { attempts: 3, base: 20ms, jitter: none }
+  config-db:
+    description: The database cluster behind the cache, sized for cache misses
+    instances: 1
+    concurrency: 4
+    latency: { p50: 4ms, p99: 20ms }
+    queue: { capacity: 2000 }

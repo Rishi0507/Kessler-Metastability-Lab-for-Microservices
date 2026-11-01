@@ -1,0 +1,30 @@
+name: AWS DynamoDB outage, 2015
+description: >
+  A reconstruction of the September 2015 DynamoDB outage in us-east-1, from AWS's public
+  postmortem (aws.amazon.com/message/5467D2). Storage servers renew their partition
+  membership from a metadata service. Global secondary indexes had made membership lists
+  much larger, so responses took close to the servers' fixed timeout. A brief network
+  disruption then made renewals time out and retry, the retries kept the metadata service
+  overloaded, and the failure lasted until engineers paused requests and added capacity.
+  The postmortem gives no numbers; the rates and times here are illustrative.
+traffic:
+  rps: 200
+  entry: metadata
+  client:
+    timeout: 500ms
+    retry: { attempts: 6, base: 50ms, cap: 400ms, jitter: none }
+services:
+  metadata:
+    description: Metadata service; bundles a server's membership list and sends it back
+    instances: 4
+    concurrency: 16
+    latency: { p50: 75ms, p99: 300ms }
+    queue: { capacity: 2000 }
+    calls:
+      - to: membership-store
+        timeout: 500ms
+  membership-store:
+    description: The metadata service's own store
+    instances: 3
+    concurrency: 32
+    latency: { p50: 3ms, p99: 15ms }
