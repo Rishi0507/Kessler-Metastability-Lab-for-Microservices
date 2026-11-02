@@ -35,7 +35,7 @@ function TemplateGrid({ templates, onPick, busy }: { templates: Template[]; onPi
       {templates.map((t) => (
         <button key={t.id} className="template" onClick={() => onPick(t)} disabled={busy}>
           <h3>{t.name}</h3>
-          <p>{t.description}</p>
+          <p title={t.description}>{t.description}</p>
           <div className="tags">
             {t.tags.map((tag) => (
               <span className="tag" key={tag}>

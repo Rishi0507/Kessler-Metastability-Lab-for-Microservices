@@ -18,7 +18,7 @@ export function Topology2D({ topo, findings }: { topo: Topology; findings: Findi
   );
 
   const flagged = findings.filter((f) => f.severity === "critical" || f.severity === "high");
-  const places = new Set(flagged.flatMap((f) => (f.locations?.length ? f.locations : [f.location])));
+  const places = new Set(flagged.flatMap((f) => (f.locations?.length ? f.locations.slice(0, 3) : [f.location])));
   const riskyEdge = (from: string, to: string) => [...places].some((p) => p.includes(`${from} → ${to}`));
   const node = new Map(topo.nodes.map((n) => [n.id, n]));
   const big = ids.length > FIT_MAX_NODES;
@@ -92,8 +92,8 @@ export function Topology2D({ topo, findings }: { topo: Topology; findings: Findi
   return (
     <>
       <p className="hint">
-        {ids.length - 1} services. Scroll to explore; hover an edge or service for details. Dashed red marks what Risks
-        flags as serious.
+        {ids.length - 1} services. Scroll to explore; hover an edge or service for details. Dashed red marks the worst
+        places behind each serious risk.
       </p>
       <div className="topo2d-scroll" tabIndex={0} aria-label="Call graph, scrollable">
         {svg}

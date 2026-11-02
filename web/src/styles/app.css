@@ -606,6 +606,11 @@ dialog.dialog::backdrop {
 .template p {
   font-size: var(--t-14);
   color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
 }
 .tags {
   display: flex;
