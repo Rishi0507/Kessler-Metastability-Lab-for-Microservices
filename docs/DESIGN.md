@@ -275,8 +275,16 @@ language. A `kessler-sim` CLI provides runs, sweeps and benchmarks.
 * **Deficit Round Robin** across tenants stops one user's 500-cell sweep from starving everyone else. The KPI is
   **Jain's fairness index** over each tenant's share of the dispatched work.
 * **Adaptive boundary search:** within a magnitude row, metastability is monotone in load, so bisection finds the
-  tipping point in O(log n) cells instead of n. Skipped cells are shown as *inferred*, hatched in the UI. The KPI is
-  sims avoided versus the full grid.
+  tipping point in O(log n) cells instead of n. Skipped cells are shown as *inferred*, hatched in the UI, with the
+  state their neighbours imply. The KPI is sims avoided versus the full grid (58 % on the 45-service example, with
+  0 of 60 cells disagreeing with the full grid).
+* **Overload is a property of the load alone:** every row shares the same seeds and the trigger starts at the same
+  time, so the pre-trigger minute is bit-identical across rows (checked on 48 column/seed groups). Once any row finds
+  a column overloaded before the trigger, that column and every higher load are overloaded in all rows; the top
+  column is probed in one row first, so the others skip it.
+* **The trigger axis is not assumed monotone.** With 30 seeds per cell, a 3.8x database slowdown tipped the checkout
+  example 40 % of the time and an 8x slowdown 3 %: slow but successful calls hold capacity upstream, fast failures
+  free it.
 * **Content-addressed result cache:** identical (spec, params, seed, engine) inputs are never simulated twice. The KPI is cache hit ratio.
 * **Admission control:** the server estimates a spec's event budget up front and rejects "simulation bombs"
   (`422`). When the queue is too deep, new submissions get `503` plus `Retry-After` instead of queueing without bound.
@@ -288,11 +296,11 @@ language. A `kessler-sim` CLI provides runs, sweeps and benchmarks.
 | One api replica dies | nginx `max_fails` ejects it; requests retry on the next upstream (idempotent methods only) |
 | An edge dies | The L4 LB health-checks it and routes to the other edge |
 | A gateway dies | Clients reconnect with jittered backoff to another node and resume from the last stream ID |
-| A worker dies mid-analysis | Pending tasks are reclaimed after 30 s idle; idempotent writes mean nothing is double-counted |
+| A worker dies mid-analysis | Pending tasks are reclaimed by any surviving worker after 30 s idle; idempotent writes mean nothing is double-counted. Every long-lived loop is supervised and no log call can raise, so a recovery path cannot take the survivor down too (it once did, through a reserved logging key; found by the crash test) |
 | A worker dies mid-live-run | Lease expiry, then reassignment, then deterministic replay continues with the same numbers |
-| The scheduler leader dies | Its advisory lock is released with the session; the standby takes over within 2 s |
+| The scheduler leader dies | Its advisory lock is released with the session; the standby takes over within 2 s (`kessler_scheduler_leader` shows who leads). Measured: a worker and then the leader killed mid-sweep, the sweep finished with every simulation exactly once and results identical to a local recomputation |
 | Redis is unavailable | The api keeps serving reads and writes from Postgres (the outbox buffers dispatch); the UI falls back to HTTP polling |
-| Replica lag | LSN routing sends reads to the primary; lag is alerted on |
+| Replica lag | Reads go to the replica only once it has replayed the client's last write (from a header or a short-lived cookie, so any client gets read-your-writes); a miss there is confirmed on the primary before a 404; snapshots that come with a stream position are fenced at the primary's WAL position. Lag is alerted on |
 | Poison task | Moved to the dead-letter stream after 5 deliveries and the cell is marked `failed`, so the analysis still completes |
 
 Kessler applies its own medicine: clients use jittered exponential backoff with a retry budget, servers propagate
@@ -341,6 +349,61 @@ and the sweep re-run); median stable-region gain per applied fix; weekly returni
 * **Containers:** Docker Compose with the same topology plus PgBouncer, Prometheus, Grafana and Jaeger.
 * **Production:** cloud target to be decided with the user after the build (managed Postgres and Redis, k8s HPA on queue depth,
   zero-downtime rolling deploys).
+
+## 18. Verification
+
+Claims in this document are checked by scripts that anyone can re-run:
+
+* **Simulator correctness at scale** (`scripts/validate_engine.py`): on the 45-service example, flow
+  conservation against the static model (median deviation 0.32 %), request accounting, determinism
+  (sequential and parallel), the simulated overload onset against the predicted saturation point, and
+  the adaptive planner against a full grid (0 of 60 cells disagree).
+* **The running stack** (`scripts/e2e_check.py`): create, idempotency, a streamed sweep, recomputation of
+  stored results (bit-identical), the result cache, read latency under saturated workers, live runs.
+* **Failure drills** (`scripts/e2e_check.py --failover`): a worker and then the scheduler leader crash
+  mid-sweep; then each WebSocket gateway and an api instance. Sweeps complete with every simulation
+  exactly once, clients resume their streams without gaps, and nginx hides the dead api instance.
+* **Real outages** (`scripts/replay_incidents.py`): AWS DynamoDB (2015) and Facebook (2010) rebuilt from
+  their public postmortems. Unknown numbers are swept over plausible grids rather than tuned; only settings
+  that reproduce each postmortem's stated facts are used to test Kessler's predictions (the risk flagged in
+  advance, the recovery the engineers used, the fixes they planned).
+
+| Outage and prediction | Result |
+|---|---|
+| **AWS DynamoDB, 2015 ([postmortem](https://aws.amazon.com/message/5467D2/))** | |
+| Settings that reproduce the postmortem's facts | 35 of 64 |
+| Kessler's static check flags the risk before simulating | 35/35 |
+| Pausing requests, then resuming, ends the failure (what AWS did) | 35/35 |
+| More metadata capacity prevents it | 26/35 |
+| A lower renewal rate prevents it | 26/35 |
+| A longer timeout alone prevents it | 1/35 |
+| A longer timeout plus a queue that drops stale requests prevents it | 35/35 |
+| Kessler's one-click fixes prevent it | 35/35 |
+| **Facebook, 2010 ([post](https://engineering.fb.com/2010/09/23/uncategorized/more-details-on-today-s-outage/))** | |
+| Settings that reproduce the post's facts | 18 of 24 |
+| Kessler's static check flags the risk before simulating | 18/18 |
+| Restoring all traffic at once collapses it again | 18/18 |
+| Letting users back while the database copes recovers (what Facebook did) | 14/18 (median 4 min of simulated time) |
+| A database sized for cold traffic prevents it | 16/18 |
+| Kessler's one-click fixes prevent it | 16/18 |
+
+What the misses mean:
+
+- **A longer timeout alone (1/35).** The metadata queue holds more work than even a tripled timeout
+  covers, so callers still time out and retry. Add a queue that drops requests older than the
+  timeout and it works every time; Kessler's static check flags exactly this ("queue holds requests
+  longer than callers wait").
+- **Facebook's hardest corner.** The remaining shortfalls are all where a database that can serve only
+  a third to a seventh of cold traffic sits behind a 200,000-key cache. The cache refills only as fast
+  as that database answers misses, so recovery outlasts the 10-minute observation cap and a cautious
+  ramp needs more than 30 simulated minutes, consistent with the 2.5-hour real outage.
+- The models are reconstructions: they reproduce each postmortem's stated mechanism and order of
+  events, not AWS's or Facebook's internal numbers, which were never published.
+
+Testing found real defects, each now fixed with a regression test: read-your-writes that only held for the
+web client, a snapshot/stream ordering race, a reclaim path whose log call crashed the surviving worker,
+lint output that did not scale to large systems, and verdicts that called slow but steady recoveries
+permanent.
 
 ## 17. Alternatives considered
 * **pybind11 vs a C ABI + ctypes:** chose the C ABI. It is stable across Python versions, works with any compiler, and can be called from
