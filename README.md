@@ -43,6 +43,16 @@ A short trigger becomes a state the system cannot leave by itself, a **metastabl
 3. **Fix and compare.** Kessler applies the recommended fixes as a new version and re-runs the *same* sweep with the same random seeds, so any difference comes from the change alone.
 4. **Watch it live.** A three.js view of your topology shows request particles: errors in red, retries in amber. You can break things, fix them mid-run, and see the system respond in under a second.
 
+### Start from your own traces
+
+You don't have to write the YAML by hand. Export OpenTelemetry traces as OTLP JSON (the collector's `file` exporter writes this format), then either click **New system → Import traces** in the app or run:
+
+```bash
+python scripts/import_traces.py traces.json --name "My shop" -o kessler.yaml
+```
+
+Kessler reads the services, call graph, traffic, error rates and each service's own latency (time spent waiting on its calls is subtracted), and spots retries as repeated calls. Traces can't show your timeout settings, so the importer marks them `# guess`; set them from your client config before you trust a sweep.
+
 ## Architecture
 
 ```mermaid
@@ -143,7 +153,7 @@ What the misses mean:
 | Engine throughput, 4 threads | 16.5 M events/s (2.64x) |
 | Queueing-theory validation | M/M/1 within 5 %; M/M/c within 4 % of Erlang-C |
 | Memory | 5 MB growth over 145 simulations of the 45-service system |
-| Tests | 33 C++ engine tests, 86 backend tests, 13 frontend tests |
+| Tests | 33 C++ engine tests, 90 backend tests, 13 frontend tests |
 | Frontend | Core bundle 138 KB gzip; three.js and the editor load only on the pages that need them |
 
 ## Run it

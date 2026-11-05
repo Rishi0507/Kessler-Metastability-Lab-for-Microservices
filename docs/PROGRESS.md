@@ -15,6 +15,7 @@ What exists today and what comes next.
 - [x] Engine validation at scale (`scripts/validate_engine.py`): 7/7 on the 45-service system
 - [x] End-to-end and failover checks against the running stack (`scripts/e2e_check.py`): 7/7, and the sweep survives a worker crash plus a scheduler leader crash with identical results
 - [x] Real-outage replays (`scripts/replay_incidents.py`): AWS DynamoDB 2015 and Facebook 2010
+- [x] Import from OpenTelemetry traces (`scripts/import_traces.py`, and Import traces in the app)
 
 ## Bugs found by testing (all fixed, with tests)
 
