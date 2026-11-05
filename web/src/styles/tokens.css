@@ -33,6 +33,8 @@
   --radius-l: 20px;
   --radius-pill: 980px;
 
+  --ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter Variable", "Segoe UI", system-ui, sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter Variable", "Segoe UI", system-ui, sans-serif;
   --font-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;

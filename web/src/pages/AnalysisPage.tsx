@@ -5,7 +5,7 @@ import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { useSession } from "../app/session";
 import { toast, toastError, useRegisterCommands } from "../app/stores";
 import { MetastabilityMap, type MapCell } from "../components/MetastabilityMap";
-import { InfoTip, SeverityDot, Skeleton, StatusDot } from "../components/ui";
+import { InfoTip, Segmented, SeverityDot, Skeleton, StatusDot, useTitle } from "../components/ui";
 import { api, ApiError, newIdempotencyKey } from "../lib/api";
 import { aggregate, cellState, STATE_LABEL } from "../lib/cells";
 import { axisValue, fmtCount, fmtMult, fmtPct, fmtSeconds, triggerPhrase } from "../lib/format";
@@ -128,6 +128,7 @@ export default function AnalysisPage() {
   const [selected, setSelected] = useState<number | null>(null);
 
   const a = snap.data?.analysis;
+  useTitle(snap.data?.system?.name ? `Analysis of ${snap.data.system.name}` : "Analysis");
   const params = snap.data?.params;
   const result = a?.status === "done" ? a.result : null;
   const cells = useMemo(() => (params ? buildCells(params, seeds, planned, result) : []), [params, seeds, planned, result]);
@@ -251,20 +252,27 @@ export default function AnalysisPage() {
       <div className="analysis-grid">
         <div className="map-wrap">
           <div className="map-toolbar">
-            <div className="seg" role="group" aria-label="View">
-              <button aria-pressed={view === "map"} onClick={() => setView("map")}>Map</button>
-              <button aria-pressed={view === "terrain"} onClick={() => setView("terrain")}>Terrain</button>
-            </div>
+            <Segmented
+              label="View"
+              value={view}
+              onChange={setView}
+              options={[
+                { value: "map", label: "Map" },
+                { value: "terrain", label: "Terrain" },
+              ]}
+            />
             <InfoTip label="How to read the map">
               Each cell is one load level (column) and one {params.trigger.kind === "crash" ? "outage length" : "fault size"} (row). The
               line marks the tipping boundary. Click a cell for details.
             </InfoTip>
           </div>
-          {view === "map" ? (
-            <MetastabilityMap params={params} cells={cells} selected={selected} onSelect={setSelected} />
-          ) : (
-            <TerrainView params={params} cells={cells} />
-          )}
+          <div key={view} className="fade">
+            {view === "map" ? (
+              <MetastabilityMap params={params} cells={cells} selected={selected} onSelect={setSelected} />
+            ) : (
+              <TerrainView params={params} cells={cells} />
+            )}
+          </div>
           <div className="legend" aria-hidden="true">
             <span><i className="sw stable" />Recovers</span>
             <span><i className="sw slow" />Recovers slowly</span>

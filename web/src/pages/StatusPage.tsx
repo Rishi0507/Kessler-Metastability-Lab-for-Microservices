@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { InfoTip, Skeleton } from "../components/ui";
+import { InfoTip, Skeleton, useTitle } from "../components/ui";
 import { api } from "../lib/api";
 import { fmtCount, fmtPct, fmtSeconds } from "../lib/format";
 
@@ -52,6 +52,7 @@ function Slo({ name, target, value, ok, unit }: { name: string; target: string; 
 }
 
 export default function StatusPage() {
+  useTitle("Status");
   const q = useQuery({
     queryKey: ["kpis"],
     queryFn: () => api.get<Kpis>("/api/v1/platform/kpis"),

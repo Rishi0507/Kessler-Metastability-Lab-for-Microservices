@@ -1,9 +1,9 @@
 import { LogOut, Moon, Search, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet } from "react-router";
+import { Link, NavLink, Outlet, useLocation } from "react-router";
 import { useSession, useSignOut } from "../app/session";
 import { useCommands, useToasts } from "../app/stores";
-import { applyTheme, isDark } from "../app/theme";
+import { isDark, switchTheme } from "../app/theme";
 import { realtime, type ConnState } from "../lib/ws";
 import { AuthDialog } from "./AuthDialog";
 import { CommandPalette } from "./CommandPalette";
@@ -40,6 +40,7 @@ export function Shell() {
   const setOpen = useCommands((s) => s.setOpen);
   const setAuthOpen = useCommands((s) => s.setAuthOpen);
   const [dark, setDark] = useState(isDark());
+  const { pathname } = useLocation();
   const mac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
 
   return (
@@ -61,7 +62,7 @@ export function Shell() {
           aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
           title={dark ? "Light theme" : "Dark theme"}
           onClick={() => {
-            applyTheme(dark ? "light" : "dark");
+            switchTheme(dark ? "light" : "dark");
             setDark(!dark);
           }}
         >
@@ -86,7 +87,7 @@ export function Shell() {
           </button>
         )}
       </header>
-      <main>
+      <main key={pathname} className="route">
         <Outlet />
       </main>
       <ConnectionBanner />

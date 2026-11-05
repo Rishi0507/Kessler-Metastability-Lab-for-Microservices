@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { fmtMult } from "../lib/format";
 import type { Topology } from "../lib/types";
-import { Dialog, InfoTip } from "./ui";
+import { Dialog, InfoTip, Segmented } from "./ui";
 
 export interface TriggerChoice {
   trigger: { kind: string; target?: string; duration_s?: number };
@@ -114,14 +114,15 @@ export function TriggerDialog({
         </div>
         <div className="field">
           <span className="label">Search</span>
-          <div className="seg" role="group" aria-label="Search mode">
-            <button aria-pressed={mode === "adaptive"} onClick={() => setMode("adaptive")}>
-              Adaptive
-            </button>
-            <button aria-pressed={mode === "grid"} onClick={() => setMode("grid")}>
-              Full grid
-            </button>
-          </div>
+          <Segmented
+            label="Search mode"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: "adaptive", label: "Adaptive" },
+              { value: "grid", label: "Full grid" },
+            ]}
+          />
         </div>
       </div>
       <div className="title-row muted">

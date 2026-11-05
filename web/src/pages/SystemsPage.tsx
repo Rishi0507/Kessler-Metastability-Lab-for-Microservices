@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { useAfterSignIn, useSession } from "../app/session";
 import { toastError, useRegisterCommands } from "../app/stores";
-import { Dialog, InfoTip, Skeleton } from "../components/ui";
+import { Dialog, InfoTip, Skeleton, useTitle } from "../components/ui";
 import { api } from "../lib/api";
 import { fmtAgo } from "../lib/format";
 import type { SystemDetail, SystemSummary, Template } from "../lib/types";
@@ -50,11 +50,13 @@ function TemplateGrid({ templates, onPick, busy }: { templates: Template[]; onPi
 }
 
 export default function SystemsPage() {
+  useTitle("Systems");
   const { data: user, isLoading: loadingUser } = useSession();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [params, setParams] = useSearchParams();
   const [picking, setPicking] = useState(false);
+  const [removing, setRemoving] = useState<SystemSummary | null>(null);
   const started = useRef(false);
 
   const systems = useQuery({
@@ -66,6 +68,14 @@ export default function SystemsPage() {
     queryKey: ["templates"],
     queryFn: () => api.get<{ templates: Template[] }>("/api/v1/templates"),
     staleTime: Infinity,
+  });
+  const remove = useMutation({
+    mutationFn: (s: SystemSummary) => api.del(`/api/v1/systems/${s.id}`),
+    onSuccess: () => {
+      setRemoving(null);
+      void qc.invalidateQueries({ queryKey: ["systems"] });
+    },
+    onError: (e) => toastError((e as Error).message),
   });
   const create = useMutation({
     mutationFn: (t: { yaml: string; id?: string }) =>
@@ -138,6 +148,7 @@ export default function SystemsPage() {
               <th>Version</th>
               <th>Analyses</th>
               <th>Updated</th>
+              <th><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -154,11 +165,42 @@ export default function SystemsPage() {
                 <td className="num muted">v{s.latest_version}</td>
                 <td className="num muted">{s.analyses}</td>
                 <td className="muted">{fmtAgo(s.updated_at)}</td>
+                <td style={{ width: 52 }}>
+                  <button
+                    className="btn btn-ghost icon-btn row-action"
+                    aria-label={`Delete ${s.name}`}
+                    title="Delete"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRemoving(s);
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
+
+      <Dialog
+        open={removing !== null}
+        onClose={() => setRemoving(null)}
+        title="Delete this system?"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setRemoving(null)}>
+              Cancel
+            </button>
+            <button className="btn btn-primary btn-destructive" disabled={remove.isPending} onClick={() => removing && remove.mutate(removing)}>
+              {remove.isPending ? "Deleting…" : "Delete"}
+            </button>
+          </>
+        }
+      >
+        <p className="muted">{removing?.name} and its analyses will disappear from your list.</p>
+      </Dialog>
 
       <Dialog open={picking} onClose={() => setPicking(false)} title="New system" wide>
         {templates.data ? (

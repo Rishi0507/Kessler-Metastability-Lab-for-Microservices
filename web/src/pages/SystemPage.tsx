@@ -7,7 +7,7 @@ import { toast, toastError, useRegisterCommands } from "../app/stores";
 import { SpecEditor, type SpecEditorHandle } from "../components/SpecEditor";
 import { Topology2D } from "../components/Topology2D";
 import { TriggerDialog, type TriggerChoice } from "../components/TriggerDialog";
-import { Grade, InfoTip, SeverityDot, Skeleton, StatusDot } from "../components/ui";
+import { Grade, InfoTip, SeverityDot, Skeleton, StatusDot, useTitle } from "../components/ui";
 import { api, ApiError, newIdempotencyKey, request } from "../lib/api";
 import { fmtAgo, fmtPct } from "../lib/format";
 import type { Analysis, CheckResult, Finding, SystemDetail } from "../lib/types";
@@ -60,6 +60,7 @@ export default function SystemPage() {
     queryFn: () => api.get<SystemDetail>(`/api/v1/systems/${id}`),
     enabled: !!user,
   });
+  useTitle(system.data?.name);
   const analyses = useQuery({
     queryKey: ["analyses", id],
     queryFn: () => api.get<{ items: Analysis[] }>(`/api/v1/analyses?system_id=${id}&limit=10`),

@@ -1,6 +1,8 @@
 import { Link } from "react-router";
+import { useTitle } from "../components/ui";
 
 export function NotFound() {
+  useTitle("Not found");
   return (
     <div className="page">
       <div className="empty">
