@@ -14,7 +14,7 @@ jobs:
     name: engine (C++20)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: sudo apt-get update && sudo apt-get install -y ninja-build
       - name: Build (Release)
         run: cmake -S engine -B engine/build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build engine/build
@@ -22,7 +22,7 @@ jobs:
         run: ./engine/build/kessler-tests
       - name: Benchmark (informational)
         run: ./engine/build/kessler-sim bench --sims 4
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: engine-linux
           path: engine/build/libkessler_engine.so
@@ -31,7 +31,7 @@ jobs:
     name: engine (ASan + UBSan)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: sudo apt-get update && sudo apt-get install -y ninja-build
       - run: cmake -S engine -B engine/build-asan -G Ninja -DCMAKE_BUILD_TYPE=Debug -DKESSLER_SANITIZE=ON && cmake --build engine/build-asan
       - run: ./engine/build-asan/kessler-tests
@@ -59,12 +59,12 @@ jobs:
       KESSLER_REDIS_URL: redis://127.0.0.1:6379/0
       KESSLER_ENGINE_PATH: ${{ github.workspace }}/engine/build/libkessler_engine.so
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: engine-linux
           path: engine/build
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -86,8 +86,8 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -102,6 +102,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [engine, backend, web]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: docker build -f deploy/docker/backend.Dockerfile -t kessler/backend:ci .
       - run: docker build -f deploy/docker/edge.Dockerfile -t kessler/edge:ci .
