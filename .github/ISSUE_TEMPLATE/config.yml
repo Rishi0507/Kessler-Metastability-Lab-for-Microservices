@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or idea
+    url: https://github.com/Rishi0507/Kessler-Metastability-Lab-for-Microservices/discussions
+    about: Ask a question or float an idea before opening an issue.
+  - name: Security vulnerability
+    url: https://github.com/Rishi0507/Kessler-Metastability-Lab-for-Microservices/security/advisories/new
+    about: Report security problems privately, not as an issue.

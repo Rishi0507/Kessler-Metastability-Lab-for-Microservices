@@ -168,3 +168,11 @@ python scripts/validate_engine.py --template marketplace-at-scale   # simulator 
 python scripts/replay_incidents.py                 # two real outages, across plausible settings
 python scripts/e2e_check.py [--failover]           # the running stack, end to end (and crash tests)
 ```
+
+## Contributing
+
+Bug reports, fixes and new templates are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup and the pull request flow, and report security problems through [SECURITY.md](SECURITY.md), not public issues.
+
+## License
+
+[MIT](LICENSE)
