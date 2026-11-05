@@ -10,12 +10,21 @@
 
 ## Screenshots
 
-| | |
-|---|---|
-| ![The system workspace: YAML spec, resilience grade, call graph and one-line risks](docs/img/workspace.png) | ![A finished sweep: the metastability map with the tipping boundary and one cell's details](docs/img/analysis.png) |
-| **Workspace.** Edit the spec; risks appear as you type, each with a one-click fix. | **Sweep.** Red cells never recover. The black line marks the tipping boundary. |
-| ![The same sweep before and after the recommended fixes: 27% safe becomes 100% safe](docs/img/compare.png) | ![A live run in dark mode: a slowed database drags gateway and checkout to 100% busy and success to 0%](docs/img/live.png) |
-| **Fix and compare.** Same seeds, so the change alone explains the difference. | **Live run.** Slow the database and watch retries pin every service at 100% busy. |
+**Workspace.** Edit the spec; risks appear as you type, each with a one-click fix.
+
+![The system workspace: YAML spec, resilience grade, call graph and one-line risks](docs/img/workspace.png)
+
+**Sweep.** Red cells never recover. The black line marks the tipping boundary.
+
+![A finished sweep: the metastability map with the tipping boundary and one cell's details](docs/img/analysis.png)
+
+**Fix and compare.** Both sweeps use the same seeds, so the fixes alone explain the difference.
+
+![The same sweep before and after the recommended fixes: 27% safe becomes 100% safe](docs/img/compare.png)
+
+**Live run.** Slow the database and watch retries pin every service at 100% busy.
+
+![A live run in dark mode: a slowed database drags gateway and checkout to 100% busy and success to 0%](docs/img/live.png)
 
 ## The problem
 
