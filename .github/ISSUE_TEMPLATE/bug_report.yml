@@ -1,0 +1,49 @@
+name: Bug report
+description: Something in Kessler does not work as described.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Commands, a minimal kessler.yaml, or the page and clicks that trigger it.
+      placeholder: |
+        1. python scripts/devstack.py up
+        2. Open the checkout-retry-storm template
+        3. Run a sweep with the default settings
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - engine (C++)
+        - spec, lint or fixes
+        - api, scheduler or worker
+        - gateway or live runs
+        - web app
+        - nginx or deployment
+        - docs
+        - not sure
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, how you run it (devstack or Docker), and the commit hash.
+      placeholder: Ubuntu 24.04, docker compose, 3b835f1
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or output
+      description: Paste relevant log lines. They render as code.
+      render: text
