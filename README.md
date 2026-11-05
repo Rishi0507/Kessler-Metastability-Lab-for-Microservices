@@ -1,5 +1,7 @@
 # Kessler
 
+[![CI](https://github.com/Rishi0507/Kessler-Metastability-Lab-for-Microservices/actions/workflows/ci.yml/badge.svg)](https://github.com/Rishi0507/Kessler-Metastability-Lab-for-Microservices/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **Find the load and fault combinations that tip your services into a failure that outlives its trigger.**
 
 ![Metastability maps of the same checkout service before and after Kessler's fixes](docs/img/metastability-maps.svg)
@@ -143,6 +145,7 @@ What the misses mean:
 | Saturation | The model predicts saturation at 1.49x today's load; the simulation is overloaded from 1.34x |
 | Adaptive search | 25 of 60 cells simulated; **0 disagreements** with simulating every cell |
 | Full stack (`scripts/e2e_check.py`) | 50-simulation sweep in 73 s, first result after 6.9 s; api p99 68 ms while the workers were saturated; stored results bit-identical to a local recomputation; a re-run served 50/50 from the cache in 2.2 s |
+| Docker production stack (`scripts/smoke.py`, in CI) | Every pull request starts the Docker stack behind Caddy and runs a guest sign-in, a system and a full sweep over HTTPS |
 | Failover (`scripts/e2e_check.py --failover`) | A worker and then the scheduler leader killed mid-sweep: the standby took over and the sweep finished with every simulation exactly once and identical results. Then both WebSocket gateways and an api instance killed while a client watched: the stream reconnected and resumed with 50/50 results, no duplicates, ids in order, and 0 of 881 reads through nginx failed |
 
 **Engine and tests**
@@ -158,6 +161,14 @@ What the misses mean:
 
 ## Run it
 
+**With Docker** (the quickest way):
+
+```bash
+docker compose up --build            # app on :8080; Grafana :3000, Prometheus :9090, Jaeger :16686 on localhost only
+```
+
+Open http://localhost:8080 and click **Try an example**.
+
 **Without Docker** (Windows, Linux or macOS). This needs Python 3.12, Node 22, and Postgres 18, Redis 8 and nginx, either portable builds in `./.tools` or on your `PATH`:
 
 ```bash
@@ -169,11 +180,7 @@ open http://localhost:8080
 python scripts/devstack.py down
 ```
 
-**With Docker:**
-
-```bash
-docker compose up --build            # app on :8080, Grafana :3000, Prometheus :9090, Jaeger :16686
-```
+**On a server with HTTPS:** follow [docs/DEPLOY.md](docs/DEPLOY.md). It takes one Linux server, a domain and one command.
 
 ## Repository layout
 
@@ -181,9 +188,9 @@ docker compose up --build            # app on :8080, Grafana :3000, Prometheus :
 engine/      C++20 simulator: DES core, resilience models, static analysis, C ABI, CLI, tests
 backend/     Python: spec compiler + lint, api, gateway, scheduler, worker, migrations, tests
 web/         React + TypeScript + three.js single-page app
-deploy/      nginx (L4 + L7), Dockerfiles, Postgres replication, Prometheus, Grafana
+deploy/      nginx (L4 + L7), Dockerfiles, Caddy, Postgres replication, Prometheus, Grafana
 scripts/     devstack (native stack: up, down, restart, kill), validation and end-to-end checks, generators
-docs/        DESIGN.md (system design), PROGRESS.md
+docs/        DESIGN.md (system design), DEPLOY.md, PROGRESS.md
 ```
 
 ## Tests
@@ -195,6 +202,7 @@ docs/        DESIGN.md (system design), PROGRESS.md
 python scripts/validate_engine.py --template marketplace-at-scale   # simulator correctness at scale
 python scripts/replay_incidents.py                 # two real outages, across plausible settings
 python scripts/e2e_check.py [--failover]           # the running stack, end to end (and crash tests)
+python scripts/smoke.py https://your.domain         # a deployed instance: sign in, create, sweep
 ```
 
 ## Contributing

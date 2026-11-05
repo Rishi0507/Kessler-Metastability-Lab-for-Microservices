@@ -32,4 +32,5 @@ What exists today and what comes next.
 
 - [ ] Load test with many concurrent users (API latency, WebSocket fan-out, fair share across tenants)
 - [ ] Browser walkthrough of every page in both themes, on a focused window (Chrome demotes unfocused tabs to idle priority, which made sweeps look frozen in automation)
-- [ ] Production deployment
+- [x] Production setup: Docker Compose behind Caddy, smoke-tested over HTTPS in CI ([DEPLOY.md](DEPLOY.md))
+- [ ] A hosted public demo
