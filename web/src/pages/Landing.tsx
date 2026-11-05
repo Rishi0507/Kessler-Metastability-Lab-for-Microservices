@@ -86,7 +86,7 @@ export default function Landing() {
         <ol>
           <li>
             <span className="step">1</span>
-            <p>Describe your services in YAML</p>
+            <p>Describe your services, or import traces</p>
           </li>
           <li>
             <span className="step">2</span>
