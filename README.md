@@ -8,6 +8,24 @@
 - **Left:** with retries at every layer, 17 of 60 combinations recover on their own.
 - **Right:** after applying Kessler's recommended fixes, 42 do.
 
+## Screenshots
+
+**Workspace.** Edit the spec; risks appear as you type, each with a one-click fix.
+
+![The system workspace: YAML spec, resilience grade, call graph and one-line risks](docs/img/workspace.png)
+
+**Sweep.** Red cells never recover. The black line marks the tipping boundary.
+
+![A finished sweep: the metastability map with the tipping boundary and one cell's details](docs/img/analysis.png)
+
+**Fix and compare.** Both sweeps use the same seeds, so the fixes alone explain the difference.
+
+![The same sweep before and after the recommended fixes: 27% safe becomes 100% safe](docs/img/compare.png)
+
+**Live run.** Slow the database and watch retries pin every service at 100% busy.
+
+![A live run in dark mode: a slowed database drags gateway and checkout to 100% busy and success to 0%](docs/img/live.png)
+
 ## The problem
 
 In most long outages, the system's *reaction* to a fault does more damage than the fault itself:
@@ -29,20 +47,20 @@ A short trigger becomes a state the system cannot leave by itself, a **metastabl
 
 ```mermaid
 flowchart LR
-  B["Browser<br/>React, TypeScript, three.js"] -->|HTTPS + WSS| L4["L4 load balancer<br/>nginx stream"]
+  B["Browser<br/>React + three.js"] -->|HTTPS + WSS| L4["L4 balancer<br/>nginx stream"]
   L4 --> E1["Edge 1<br/>nginx L7"]
   L4 --> E2["Edge 2<br/>nginx L7"]
-  E1 & E2 -->|"/api, least_conn"| API["api x3<br/>FastAPI, stateless"]
+  E1 & E2 -->|"/api"| API["api x3<br/>FastAPI"]
   E1 & E2 -->|"/ws"| GW["gateway x2<br/>WebSockets"]
-  API -->|"writes + outbox, 1 txn"| PG[("Postgres 18 primary")]
-  PG -->|WAL stream| RP[("replica")]
+  API -->|"writes + outbox"| PG[("Postgres<br/>primary")]
+  PG -->|WAL| RP[("Postgres<br/>replica")]
   API -.->|"LSN-gated reads"| RP
-  API -->|"cache, rate limits, tickets"| R[("Redis 8")]
-  S["scheduler x2<br/>leader + standby"] -->|"outbox relay, SKIP LOCKED"| PG
-  S -->|"fair-share dispatch"| R
-  W["sim-worker xN<br/>C++ engine, GIL released"] <-->|"task + result streams"| R
-  W -->|"idempotent results"| PG
-  R -->|"pub/sub + backfill"| GW
+  API -->|"cache, limits"| R[("Redis 8")]
+  S["scheduler x2<br/>leader + standby"] -->|"outbox relay"| PG
+  S -->|"fair share"| R
+  W["worker xN<br/>C++ engine"] <-->|"task streams"| R
+  W -->|"results"| PG
+  R -->|"pub/sub"| GW
 ```
 
 The full write-up is [docs/DESIGN.md](docs/DESIGN.md). It covers requirements, capacity estimates, data model, failure modes and trade-offs.
