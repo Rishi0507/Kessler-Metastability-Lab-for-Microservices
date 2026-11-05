@@ -1,6 +1,6 @@
 # Kessler
 
-**Find the load and fault combinations that tip your services into self-sustaining failure, before production does.**
+**Find the load and fault combinations that tip your services into a failure that outlives its trigger.**
 
 ![Metastability maps of the same checkout service before and after Kessler's fixes](docs/img/metastability-maps.svg)
 
@@ -10,17 +10,17 @@
 
 ## The problem
 
-Most long outages are not caused by the first fault but by the system's *reaction* to it:
+In most long outages, the system's *reaction* to a fault does more damage than the fault itself:
 
-- **Retry amplification.** Three retries at each of three layers turn one click into 27 backend calls, at the exact moment the backend is slowest.
+- **Retry amplification.** Three retries at each of three layers turn one click into 27 backend calls while the backend runs at its slowest.
 - **Wasted work.** Callers time out while callees keep working on requests nobody is waiting for.
 - **Cold-cache collapse.** A flushed cache sends every read to a database too busy to refill it.
 
-A short trigger becomes a state the system cannot leave by itself, a **metastable failure** (Bronson et al., HotOS '21; Huang et al., OSDI '22). Teams pick timeout, retry and pool values by intuition. Kessler measures them.
+A short trigger becomes a state the system cannot leave by itself, a **metastable failure** (Bronson et al., HotOS '21; Huang et al., OSDI '22). Teams set timeout, retry and pool values by feel. Kessler measures what those values do under load.
 
 ## What it does
 
-1. **Describe** your services in a short `kessler.yaml`: instances, worker pools, queues, latency distributions, per-call timeouts, retries and jitter, retry budgets, circuit breakers, deadline propagation, caches, contention and autoscaling. Lint findings appear as you type. Each has a one-click fix and a resilience grade.
+1. **Describe** your services in a short `kessler.yaml`: instances, worker pools, queues, latency distributions, per-call timeouts, retries and jitter, retry budgets, circuit breakers, deadline propagation, caches, contention and autoscaling. The editor lints as you type, offers a one-click fix for each finding and grades the spec's resilience.
 2. **Sweep.** A deterministic C++ discrete-event simulator runs your system across load levels and trigger sizes (slowdowns, error bursts, outages, traffic spikes, cache flushes). It draws a **metastability map** with the tipping boundary and names the mechanism that keeps failures alive.
 3. **Fix and compare.** Kessler applies the recommended fixes as a new version and re-runs the *same* sweep with the same random seeds, so any difference comes from the change alone.
 4. **Watch it live.** A three.js view of your topology shows request particles: errors in red, retries in amber. You can break things, fix them mid-run, and see the system respond in under a second.
@@ -57,7 +57,7 @@ The full write-up is [docs/DESIGN.md](docs/DESIGN.md). It covers requirements, c
 | Exactly-once effects | `Idempotency-Key` records commit in the same transaction as the work. A transactional outbox handles dispatch, and conditional state transitions make redelivered tasks no-ops. |
 | Work distribution | Redis Streams consumer groups with idle reclaim and a dead-letter queue. Deficit Round Robin gives each tenant its fair share, measured with Jain's fairness index. |
 | Coordination | The scheduler leader is elected through a Postgres advisory lock (exported as `kessler_scheduler_leader`; the lock's connection names its holder). Live-run ownership is a Redis lease with fencing tokens. |
-| Fault tolerance | A worker dying mid-run is recovered by **deterministic replay** of the seed plus the event-sourced command log, so the run continues with identical numbers. Orphaned batch tasks are reclaimed by surviving workers. Every long-lived loop is supervised (restart with backoff) and no log call can raise, so one crash cannot cascade. |
+| Fault tolerance | If a worker dies mid-run, another worker **replays** the seed plus the event-sourced command log, so the run continues with identical numbers. Surviving workers reclaim orphaned batch tasks. Every long-lived loop is supervised (restart with backoff) and no log call can raise, so one crash cannot cascade. |
 | Consistency | Reads use the replica only once it has replayed the client's last write (read-your-writes by LSN, from a header or a short-lived cookie, so any client gets it), and a miss on the replica is confirmed on the primary before a 404. Snapshots handed out with a stream position are fenced at the primary's WAL position, so no event falls between them. Spec edits use `If-Match` optimistic concurrency. |
 | Real time | One multiplexed WebSocket per tab with single-use tickets and HMAC topic tokens, so the gateway never needs a database lookup. Subscriptions backfill, then flush, with no gaps. Live frames are conflated, so slow clients get the latest frame. |
 | Efficiency | Adaptive bisection finds the tipping boundary in O(log n) cells per row. A content-addressed result cache never simulates identical inputs twice. |
@@ -66,12 +66,12 @@ The full write-up is [docs/DESIGN.md](docs/DESIGN.md). It covers requirements, c
 
 ## Verified (2-core Ryzen 3 3250U laptop)
 
-Everything below is reproducible with the scripts named in each row.
+You can reproduce each result with the script named next to it.
 
 **Against real outages** (`python scripts/replay_incidents.py`). Two public postmortems, rebuilt
-as Kessler systems. Neither publishes numbers, so every unknown (traffic, timeouts, retries, how
-much slower the slow part became) is swept over a grid of plausible values instead of being tuned;
-only settings that reproduce each postmortem's stated facts are used to test what Kessler predicts.
+as Kessler systems. Neither publishes numbers, so the replay sweeps every unknown (traffic, timeouts, retries, how
+much slower the slow part became) over a grid of plausible values instead of tuning it. Kessler's
+predictions face only the settings that reproduce each postmortem's stated facts.
 
 | Outage and prediction | Result |
 |---|---|
@@ -96,14 +96,14 @@ What the misses mean:
 
 - **A longer timeout alone (1/35).** The metadata queue holds more work than even a tripled timeout
   covers, so callers still time out and retry. Add a queue that drops requests older than the
-  timeout and it works every time; Kessler's static check flags exactly this ("queue holds requests
+  timeout and it works every time; Kessler's static check flags this case ("queue holds requests
   longer than callers wait").
-- **Facebook's hardest corner.** The remaining shortfalls are all where a database that can serve only
+- **Facebook's hardest corner.** The remaining misses all sit where a database that can serve only
   a third to a seventh of cold traffic sits behind a 200,000-key cache. The cache refills only as fast
   as that database answers misses, so recovery outlasts the 10-minute observation cap and a cautious
   ramp needs more than 30 simulated minutes, consistent with the 2.5-hour real outage.
-- The models are reconstructions: they reproduce each postmortem's stated mechanism and order of
-  events, not AWS's or Facebook's internal numbers, which were never published.
+- The models are reconstructions. They reproduce each postmortem's stated mechanism and order of
+  events; neither company published its internal numbers.
 
 **On a 45-service system** (the *Marketplace at scale* example: 64 calls, four caches, six databases).
 
