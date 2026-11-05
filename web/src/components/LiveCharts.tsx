@@ -78,7 +78,7 @@ export function LiveCharts({ data }: { data: SeriesBuffer }) {
   return (
     <div className="charts">
       <Chart label="Requests succeeding" value={last(data.ratio) !== undefined ? pct(last(data.ratio)!) : " - "} xs={data.t} ys={data.ratio} color="--stable" fmt={pct} yMax={1.05} />
-      <Chart label="Slowest 1% of requests" value={last(data.p99) !== undefined ? ms(last(data.p99)!) : " - "} xs={data.t} ys={data.p99} color="--slow" fmt={ms} />
+      <Chart label="Slowest 1% of requests" value={last(data.p99) !== undefined && last(data.ratio) !== 0 ? ms(last(data.p99)!) : " - "} xs={data.t} ys={data.p99} color="--slow" fmt={ms} />
       <Chart label="Load amplification" value={last(data.amp) !== undefined ? mult(last(data.amp)!) : " - "} xs={data.t} ys={data.amp} color="--meta" fmt={mult} />
     </div>
   );
