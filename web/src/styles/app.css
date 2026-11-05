@@ -97,7 +97,8 @@
 }
 .crumbs {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   align-items: center;
   font-size: var(--t-14);
   color: var(--ink-3);
@@ -986,7 +987,12 @@ dialog.dialog::backdrop {
 .seg button[aria-pressed="true"] {
   color: var(--ink);
 }
+.map-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
 .map-svg {
+  min-width: 520px;
   width: 100%;
   height: auto;
   display: block;
@@ -1167,6 +1173,8 @@ dialog.dialog::backdrop {
 }
 .live-canvas canvas {
   display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 .hud {
   position: absolute;

@@ -90,76 +90,78 @@ export function MetastabilityMap({
   const showEvery = nCols > 8 ? 2 : 1;
 
   return (
-    <svg className="map-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={title ?? "Metastability map"}>
-      <defs>
-        <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="6" stroke="var(--surface)" strokeWidth="2" />
-        </pattern>
-      </defs>
-      {title && (
-        <text x={left} y={16} className="axis-title">
-          {title}
-        </text>
-      )}
-      {Array.from({ length: nRows }, (_, r) => {
-        const row = nRows - 1 - r;
-        return (
-          <text key={`y${row}`} x={left - 8} y={top + r * cellH + cellH / 2 + 4} textAnchor="end">
-            {axisValue(kind, params.values[row] ?? 0)}
+    <div className="map-scroll">
+      <svg className="map-svg" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={title ?? "Metastability map"}>
+        <defs>
+          <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="6" stroke="var(--surface)" strokeWidth="2" />
+          </pattern>
+        </defs>
+        {title && (
+          <text x={left} y={16} className="axis-title">
+            {title}
           </text>
-        );
-      })}
-      {Array.from({ length: nRows * nCols }, (_, i) => {
-        const row = Math.floor(i / nCols);
-        const col = i % nCols;
-        const r = nRows - 1 - row;
-        const x = left + col * cellW;
-        const y = top + r * cellH;
-        const s = state(i);
-        return (
-          <g key={i}>
-            <rect
-              className={`cell ${s.cls}${selected === i ? " sel" : ""}`}
-              x={x}
-              y={y}
-              width={cellW}
-              height={cellH}
-              rx={3}
-              onClick={() => onSelect?.(i)}
-              tabIndex={onSelect ? 0 : -1}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") onSelect?.(i);
-              }}
-            >
-              <title>{`Load ${fmtMult(params.loads[col] ?? 0)}, ${axisValue(kind, params.values[row] ?? 0)}: ${s.label}`}</title>
-            </rect>
-            {s.cls.includes("inferred") && <rect x={x} y={y} width={cellW} height={cellH} rx={3} fill="url(#hatch)" pointerEvents="none" />}
-          </g>
-        );
-      })}
-      {anyBoundary && <path className="boundary" d={path} />}
-      {today !== null && (
-        <>
-          <line className="today" x1={today} x2={today} y1={top - 4} y2={top + nRows * cellH + 4} />
-          {!compact && (
-            <text className="today-label" x={today} y={top + nRows * cellH + 18} textAnchor="middle">
-              today
+        )}
+        {Array.from({ length: nRows }, (_, r) => {
+          const row = nRows - 1 - r;
+          return (
+            <text key={`y${row}`} x={left - 8} y={top + r * cellH + cellH / 2 + 4} textAnchor="end">
+              {axisValue(kind, params.values[row] ?? 0)}
             </text>
-          )}
-        </>
-      )}
-      {params.loads.map((l, col) =>
-        col % showEvery === 0 || col === nCols - 1 ? (
-          <text key={`x${col}`} x={left + (col + 0.5) * cellW} y={top + nRows * cellH + (compact ? 14 : 34)} textAnchor="middle">
-            {fmtMult(l)}
+          );
+        })}
+        {Array.from({ length: nRows * nCols }, (_, i) => {
+          const row = Math.floor(i / nCols);
+          const col = i % nCols;
+          const r = nRows - 1 - row;
+          const x = left + col * cellW;
+          const y = top + r * cellH;
+          const s = state(i);
+          return (
+            <g key={i}>
+              <rect
+                className={`cell ${s.cls}${selected === i ? " sel" : ""}`}
+                x={x}
+                y={y}
+                width={cellW}
+                height={cellH}
+                rx={3}
+                onClick={() => onSelect?.(i)}
+                tabIndex={onSelect ? 0 : -1}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") onSelect?.(i);
+                }}
+              >
+                <title>{`Load ${fmtMult(params.loads[col] ?? 0)}, ${axisValue(kind, params.values[row] ?? 0)}: ${s.label}`}</title>
+              </rect>
+              {s.cls.includes("inferred") && <rect x={x} y={y} width={cellW} height={cellH} rx={3} fill="url(#hatch)" pointerEvents="none" />}
+            </g>
+          );
+        })}
+        {anyBoundary && <path className="boundary" d={path} />}
+        {today !== null && (
+          <>
+            <line className="today" x1={today} x2={today} y1={top - 4} y2={top + nRows * cellH + 4} />
+            {!compact && (
+              <text className="today-label" x={today} y={top + nRows * cellH + 18} textAnchor="middle">
+                today
+              </text>
+            )}
+          </>
+        )}
+        {params.loads.map((l, col) =>
+          col % showEvery === 0 || col === nCols - 1 ? (
+            <text key={`x${col}`} x={left + (col + 0.5) * cellW} y={top + nRows * cellH + (compact ? 14 : 34)} textAnchor="middle">
+              {fmtMult(l)}
+            </text>
+          ) : null,
+        )}
+        {!compact && (
+          <text className="axis-title" x={left + (nCols * cellW) / 2} y={H - 2} textAnchor="middle">
+            Load, as a multiple of today's traffic
           </text>
-        ) : null,
-      )}
-      {!compact && (
-        <text className="axis-title" x={left + (nCols * cellW) / 2} y={H - 2} textAnchor="middle">
-          Load, as a multiple of today's traffic
-        </text>
-      )}
-    </svg>
+        )}
+      </svg>
+    </div>
   );
 }
