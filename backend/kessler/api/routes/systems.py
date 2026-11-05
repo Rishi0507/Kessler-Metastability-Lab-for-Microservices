@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Query, Request, Response
+from fastapi import APIRouter, Query, Response
 from pydantic import BaseModel, Field
 
 from ...errors import ApiError
@@ -111,7 +111,7 @@ async def list_systems(
 
 
 @router.post("/systems", status_code=201)
-async def create_system(body: SystemIn, request: Request, user: User, ctx: Ctx) -> Response:
+async def create_system(body: SystemIn, user: User, ctx: Ctx) -> Response:
     await limit(ctx, "write", user.user_id)
     result = _validated(body.yaml)
     name = (body.name or result["name"]).strip()[:80]

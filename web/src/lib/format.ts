@@ -70,15 +70,6 @@ export function triggerPhrase(t: { kind: string; target?: string; duration_s?: n
   }
 }
 
-export const AXIS_LABEL: Record<string, string> = {
-  latency: "Slowdown",
-  errors: "Error rate",
-  capacity_loss: "Capacity lost",
-  spike: "Traffic spike",
-  crash: "Outage length",
-  cache_flush: "Cache flush",
-};
-
 export function axisValue(kind: string, v: number): string {
   if (kind === "errors" || kind === "capacity_loss") return fmtPct(v);
   if (kind === "crash") return `${v} s`;
