@@ -43,7 +43,7 @@ services:
     command: ["postgres", "-c", "wal_level=replica", "-c", "max_wal_senders=8", "-c", "wal_keep_size=512MB",
               "-c", "max_connections=200", "-c", "shared_buffers=256MB", "-c", "log_min_duration_statement=250"]
     volumes:
-      - pg-primary:/var/lib/postgresql/data
+      - pg-primary:/var/lib/postgresql
       - ./deploy/postgres/primary-init.sh:/docker-entrypoint-initdb.d/01-replication.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kessler -d kessler"]
@@ -55,11 +55,11 @@ services:
     restart: unless-stopped
     user: postgres
     environment:
-      PGDATA: /var/lib/postgresql/data/pgdata
+      PGDATA: /var/lib/postgresql/18/docker
       REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicate}
     entrypoint: ["/bin/sh", "/replica-entrypoint.sh"]
     volumes:
-      - pg-replica:/var/lib/postgresql/data
+      - pg-replica:/var/lib/postgresql
       - ./deploy/postgres/replica-entrypoint.sh:/replica-entrypoint.sh:ro
     depends_on:
       postgres:
