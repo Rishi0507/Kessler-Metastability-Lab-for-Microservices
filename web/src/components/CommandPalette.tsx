@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useSession, useSignOut } from "../app/session";
 import { useCommands } from "../app/stores";
-import { applyTheme, isDark } from "../app/theme";
+import { isDark, switchTheme } from "../app/theme";
 
 export function CommandPalette() {
   const open = useCommands((s) => s.open);
@@ -58,8 +58,8 @@ export function CommandPalette() {
             <Command.Item onSelect={run(() => navigate("/"))}>Home</Command.Item>
           </Command.Group>
           <Command.Group heading="Preferences">
-            <Command.Item onSelect={run(() => applyTheme(isDark() ? "light" : "dark"))}>Switch to {isDark() ? "light" : "dark"} theme</Command.Item>
-            <Command.Item onSelect={run(() => applyTheme("system"))}>Follow the system theme</Command.Item>
+            <Command.Item onSelect={run(() => switchTheme(isDark() ? "light" : "dark"))}>Switch to {isDark() ? "light" : "dark"} theme</Command.Item>
+            <Command.Item onSelect={run(() => switchTheme("system"))}>Follow the system theme</Command.Item>
           </Command.Group>
           <Command.Group heading="Account">
             {!user && <Command.Item onSelect={run(() => setAuthOpen(true))}>Sign in</Command.Item>}

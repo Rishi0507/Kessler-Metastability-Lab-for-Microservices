@@ -20,6 +20,12 @@ export function applyTheme(choice: ThemeChoice): void {
   }
 }
 
+export function switchTheme(choice: ThemeChoice): void {
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  if (!document.startViewTransition || reduced) applyTheme(choice);
+  else document.startViewTransition(() => applyTheme(choice));
+}
+
 export function applyStoredTheme(): void {
   applyTheme(storedTheme());
 }

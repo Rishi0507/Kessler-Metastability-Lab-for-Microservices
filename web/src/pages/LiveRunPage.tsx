@@ -4,7 +4,7 @@ import { Link, Navigate, useParams, useSearchParams } from "react-router";
 import { useSession } from "../app/session";
 import { toast, toastError, useRegisterCommands } from "../app/stores";
 import { LiveCharts, type SeriesBuffer } from "../components/LiveCharts";
-import { InfoTip, Skeleton } from "../components/ui";
+import { InfoTip, Skeleton, useTitle } from "../components/ui";
 import { api } from "../lib/api";
 import { fmtClock, fmtMult, triggerPhrase } from "../lib/format";
 import type { Frame, RunSnapshot } from "../lib/types";
@@ -18,6 +18,7 @@ export default function LiveRunPage() {
   const { id = "" } = useParams();
   const [search] = useSearchParams();
   const { data: user, isLoading: loadingUser } = useSession();
+  useTitle("Live run");
   const snap = useQuery({ queryKey: ["run", id], queryFn: () => api.get<RunSnapshot>(`/api/v1/runs/${id}`), enabled: !!user });
   const host = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState<Frame | null>(null);

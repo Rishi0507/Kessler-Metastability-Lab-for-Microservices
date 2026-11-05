@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { useAfterSignIn, useGuestSignIn, useSession } from "../app/session";
 import { toastError, useCommands } from "../app/stores";
 import { EnergyLandscape, type HeroPhase } from "../three/EnergyLandscape";
-import { InfoTip } from "../components/ui";
+import { InfoTip, useTitle } from "../components/ui";
 import { useScene } from "../three/useScene";
 
 const CAPTIONS: Record<HeroPhase, string> = {
@@ -23,6 +23,7 @@ export default function Landing() {
     return s;
   });
   const { data: user } = useSession();
+  useTitle(undefined);
   const navigate = useNavigate();
   const guest = useGuestSignIn();
   const setNext = useAfterSignIn((s) => s.set);

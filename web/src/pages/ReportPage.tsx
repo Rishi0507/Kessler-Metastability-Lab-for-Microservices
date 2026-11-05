@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { MetastabilityMap, type MapCell } from "../components/MetastabilityMap";
-import { InfoTip, SeverityDot, Skeleton } from "../components/ui";
+import { InfoTip, SeverityDot, Skeleton, useTitle } from "../components/ui";
 import { api } from "../lib/api";
 import { aggregate } from "../lib/cells";
 import { fmtPct, triggerPhrase } from "../lib/format";
@@ -17,6 +17,7 @@ interface Report {
 export default function ReportPage() {
   const { slug = "" } = useParams();
   const q = useQuery({ queryKey: ["report", slug], queryFn: () => api.get<Report>(`/api/v1/reports/${slug}`), staleTime: Infinity });
+  useTitle(q.data ? `Report: ${q.data.system.name}` : "Report");
   if (q.isError) {
     return (
       <div className="page">

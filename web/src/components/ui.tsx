@@ -1,5 +1,5 @@
 import { Info, X } from "lucide-react";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { Severity } from "../lib/types";
 
@@ -60,6 +60,36 @@ export function Wordmark() {
   );
 }
 
+export function useTitle(title: string | undefined): void {
+  useEffect(() => {
+    document.title = title ? `${title} | Kessler` : "Kessler";
+  }, [title]);
+}
+
+export function Segmented<T extends string>({
+  value,
+  options,
+  onChange,
+  label,
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (v: T) => void;
+  label: string;
+}) {
+  const i = Math.max(0, options.findIndex((o) => o.value === value));
+  return (
+    <div className="seg" role="group" aria-label={label} style={{ "--n": options.length, "--i": i } as CSSProperties}>
+      <span className="seg-thumb" aria-hidden="true" />
+      {options.map((o) => (
+        <button key={o.value} type="button" aria-pressed={o.value === value} onClick={() => onChange(o.value)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function Dialog({
   open,
   onClose,
@@ -76,6 +106,7 @@ export function Dialog({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -90,12 +121,12 @@ export function Dialog({
       onClick={(e) => {
         if (e.target === ref.current) onClose();
       }}
-      aria-labelledby="dialog-title"
+      aria-labelledby={titleId}
     >
       {open && (
         <>
           <div className="dialog-head">
-            <h2 id="dialog-title" className="display">
+            <h2 id={titleId} className="display">
               {title}
             </h2>
             <button className="btn btn-ghost icon-btn" onClick={onClose} aria-label="Close">
@@ -119,6 +150,7 @@ export function Grade({ score, grade }: { score: number; grade: string }) {
       <svg viewBox="0 0 64 64">
         <circle cx="32" cy="32" r={r} fill="none" stroke="var(--rule)" strokeWidth="6" />
         <circle
+          className="arc"
           cx="32"
           cy="32"
           r={r}
