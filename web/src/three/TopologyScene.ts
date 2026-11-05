@@ -34,6 +34,7 @@ export class TopologyScene implements SceneHandle {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
   private camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
+  private span = 10;
   private controls: OrbitControls;
   private nodes = new Map<string, NodeViz>();
   private edges: EdgeViz[] = [];
@@ -134,8 +135,15 @@ export class TopologyScene implements SceneHandle {
       this.scene.add(line);
       this.edges.push({ from: e.from, to: e.to, curve, line, rps: 0, err: 0, retry: 0, acc: 0 });
     }
-    const span = Math.max((maxDepth + 1) * 2.8, widest * 2.2);
-    this.camera.position.set(0, span * 0.55, span * 0.95);
+    this.span = Math.max((maxDepth + 1) * 2.8, widest * 2.2);
+    this.fitCamera();
+  }
+
+  private fitCamera(): void {
+    if (this.width > 900) this.camera.setViewOffset(this.width, this.height, 150, 0, this.width, this.height);
+    else this.camera.clearViewOffset();
+    const fit = Math.max(1, 1.5 / (this.camera.aspect || 1));
+    this.camera.position.set(0, this.span * 0.55 * fit, this.span * 0.95 * fit);
     this.camera.lookAt(0, 0, 0);
   }
 
@@ -186,6 +194,7 @@ export class TopologyScene implements SceneHandle {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.fitCamera();
   }
 
   private spawn(edgeIdx: number, kind: "ok" | "err" | "retry") {
