@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Literal
 
 AXIS2 = Literal["magnitude", "duration"]
@@ -287,17 +287,3 @@ def default_params(
         mode=mode,  # type: ignore[arg-type]
         recovery_extend_s=600.0,
     )
-
-
-@dataclass
-class PlanState:
-    params: SweepParams
-    evaluated: dict[int, bool | None] = field(default_factory=dict)
-
-    overloaded: set[int] = field(default_factory=set)
-
-    def next_cells(self) -> list[int]:
-        return plan_next(self.params, self.evaluated, self.overloaded)
-
-    def complete(self) -> bool:
-        return is_complete(self.params, self.evaluated, self.overloaded)
