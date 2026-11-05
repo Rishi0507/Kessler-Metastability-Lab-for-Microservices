@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { fmtMult } from "../lib/format";
 import type { Topology } from "../lib/types";
-import { Dialog } from "./ui";
+import { Dialog, InfoTip } from "./ui";
 
 export interface TriggerChoice {
   trigger: { kind: string; target?: string; duration_s?: number };
@@ -79,10 +79,10 @@ export function TriggerDialog({
       }
     >
       <div className="field">
-        <span className="label">What goes wrong</span>
+        <span className="label">Fault</span>
         <div className="fault-grid">
           {KINDS.filter((k) => k.kind !== "cache_flush" || caches.length > 0).map((k) => (
-            <button key={k.kind} className={`btn btn-sm${k.kind === kind ? " btn-primary" : ""}`} aria-pressed={k.kind === kind} onClick={() => setKind(k.kind)}>
+            <button key={k.kind} className={`btn btn-sm${k.kind === kind ? " btn-primary" : ""}`} aria-pressed={k.kind === kind} onClick={() => setKind(k.kind)} title={k.explain}>
               {k.label}
             </button>
           ))}
@@ -90,7 +90,7 @@ export function TriggerDialog({
       </div>
       {meta.needsTarget && (
         <div className="field">
-          <label htmlFor="trg-target">Where</label>
+          <label htmlFor="trg-target">Service</label>
           <select id="trg-target" className="select" value={effTarget} onChange={(e) => setTarget(e.target.value)}>
             {targets.map((s) => (
               <option key={s.id} value={s.id}>
@@ -103,13 +103,13 @@ export function TriggerDialog({
       )}
       {meta.duration && (
         <div className="field">
-          <label htmlFor="trg-dur">For how long: {duration} s</label>
+          <label htmlFor="trg-dur">Duration: {duration} s</label>
           <input id="trg-dur" type="range" min={5} max={120} step={5} value={duration} onChange={(e) => setDuration(Number(e.target.value))} />
         </div>
       )}
       <div className="row" style={{ gap: 18 }}>
         <div className="field" style={{ flex: 1 }}>
-          <label htmlFor="trg-seeds">Repeats per cell: {seeds}</label>
+          <label htmlFor="trg-seeds">Repeats: {seeds}</label>
           <input id="trg-seeds" type="range" min={1} max={5} value={seeds} onChange={(e) => setSeeds(Number(e.target.value))} />
         </div>
         <div className="field">
@@ -124,12 +124,15 @@ export function TriggerDialog({
           </div>
         </div>
       </div>
-      <p className="muted" style={{ fontSize: "var(--t-14)" }}>
-        Kessler will {meta.explain}
-        {effTarget ? ` (${effTarget})` : ""} at 10 load levels from {fmtMult(lo)} to {fmtMult(hi)} today's traffic, repeating each
-        combination {seeds} {seeds === 1 ? "time" : "times"}: about {sims} simulations.
-        {mode === "adaptive" && " Adaptive search zooms in on the boundary and skips cells whose outcome is already implied."}
-      </p>
+      <div className="title-row muted">
+        <span className="num">About {sims} simulations</span>
+        <InfoTip label="What this sweep does">
+          Kessler will {meta.explain}
+          {effTarget ? ` (${effTarget})` : ""} at 10 load levels from {fmtMult(lo)} to {fmtMult(hi)} today's traffic, repeating each
+          combination {seeds} {seeds === 1 ? "time" : "times"}.
+          {mode === "adaptive" && " Adaptive search zooms in on the boundary and skips cells whose outcome is already implied."}
+        </InfoTip>
+      </div>
     </Dialog>
   );
 }

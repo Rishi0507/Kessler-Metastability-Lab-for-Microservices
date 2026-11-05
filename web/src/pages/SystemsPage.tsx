@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { useAfterSignIn, useSession } from "../app/session";
 import { toastError, useRegisterCommands } from "../app/stores";
-import { Dialog, Skeleton } from "../components/ui";
+import { Dialog, InfoTip, Skeleton } from "../components/ui";
 import { api } from "../lib/api";
 import { fmtAgo } from "../lib/format";
 import type { SystemDetail, SystemSummary, Template } from "../lib/types";
@@ -103,9 +103,9 @@ export default function SystemsPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <div>
+        <div className="title-row">
           <h1 className="display">Systems</h1>
-          <p className="sub">Each system is a versioned description of your services and their resilience settings.</p>
+          <InfoTip>Each system describes your services and their resilience settings. Every save creates a new version.</InfoTip>
         </div>
         <div className="spacer" />
         <button className="btn btn-primary" onClick={() => setPicking(true)}>
@@ -121,12 +121,9 @@ export default function SystemsPage() {
         </div>
       ) : items.length === 0 ? (
         <div className="stack" style={{ gap: 20 }}>
-          <div className="empty">
+          <div className="title-row">
             <h2 className="display">Start from an example</h2>
-            <p className="muted" style={{ maxWidth: "62ch" }}>
-              Each example fails in a different way. Pick one to see its risks, then find out how much load it takes to
-              tip it over.
-            </p>
+            <InfoTip>Each example fails in a different way. Pick one to see its risks, then find how much load it takes to tip it over.</InfoTip>
           </div>
           {templates.data && (
             <TemplateGrid templates={templates.data.templates} busy={create.isPending} onPick={(t) => create.mutate({ yaml: t.yaml, id: t.id })} />
@@ -164,7 +161,6 @@ export default function SystemsPage() {
       )}
 
       <Dialog open={picking} onClose={() => setPicking(false)} title="New system" wide>
-        <p className="muted">Start from an example, or from a minimal two-service system.</p>
         {templates.data ? (
           <TemplateGrid
             templates={templates.data.templates}
@@ -186,7 +182,7 @@ export default function SystemsPage() {
               create.mutate({ yaml: BLANK });
             }}
           >
-            Start from a minimal system
+            Start blank
           </button>
         </div>
       </Dialog>

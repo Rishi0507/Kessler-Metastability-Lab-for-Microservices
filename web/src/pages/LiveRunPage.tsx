@@ -4,7 +4,7 @@ import { Link, Navigate, useParams, useSearchParams } from "react-router";
 import { useSession } from "../app/session";
 import { toast, toastError, useRegisterCommands } from "../app/stores";
 import { LiveCharts, type SeriesBuffer } from "../components/LiveCharts";
-import { Skeleton } from "../components/ui";
+import { InfoTip, Skeleton } from "../components/ui";
 import { api } from "../lib/api";
 import { fmtClock, fmtMult, triggerPhrase } from "../lib/format";
 import type { Frame, RunSnapshot } from "../lib/types";
@@ -135,13 +135,17 @@ export default function LiveRunPage() {
       <div className="live-canvas" ref={host} role="img" aria-label="Live 3D view of the system: nodes are services, moving dots are requests. Red dots are errors, amber dots are retries." />
       <div className="hud">
         <div className="crumbs" style={{ marginBottom: 0 }}>
-          <Link to={`/systems/${run.system_id}`}>Back to the system</Link>
+          <Link to={`/systems/${run.system_id}`}>Back</Link>
+          <InfoTip label="How to read the view">
+            Each node is a service and each moving dot is a request. Red dots are errors, amber dots are retries. Click a service to
+            target it.
+          </InfoTip>
         </div>
         <div className="clock display" aria-live="off">
           {frame ? fmtClock(frame.t) : "00:00"}
         </div>
         <span className="muted" style={{ fontSize: "var(--t-14)" }}>
-          {state === "waiting" ? "Waiting for a simulation worker…" : state === "ended" ? "Run finished" : `Live at ${run.params.speed}× speed, ${fmtMult(load ?? run.params.load)} load`}
+          {state === "waiting" ? "Starting…" : state === "ended" ? "Finished" : `${run.params.speed}× speed, ${fmtMult(load ?? run.params.load)} load`}
         </span>
         {frame && frame.faults.length > 0 && (
           <div className="chips">
@@ -156,20 +160,23 @@ export default function LiveRunPage() {
 
       <aside className="dock" aria-label="Controls">
         <div className="stack" style={{ gap: 6 }}>
-          <h3>Selected: {target}</h3>
-          {svc ? (
-            <p className="muted num" style={{ fontSize: "var(--t-14)" }}>
-              {Math.round(svc.util * 100)}% busy, {Math.round(svc.queue)} queued, {svc.instances} instance{svc.instances === 1 ? "" : "s"}
-              {svc.hit_ratio !== undefined ? `, ${Math.round(svc.hit_ratio * 100)}% cache hits` : ""}
-            </p>
-          ) : (
-            <p className="faint" style={{ fontSize: "var(--t-14)" }}>Click a service in the view to target it.</p>
+          <h3>{target}</h3>
+          {svc && (
+            <div className="mini-stats num">
+              <span><b>{Math.round(svc.util * 100)}%</b> busy</span>
+              <span><b>{Math.round(svc.queue)}</b> queued</span>
+              <span><b>{svc.instances}</b> {svc.instances === 1 ? "instance" : "instances"}</span>
+              {svc.hit_ratio !== undefined && <span><b>{Math.round(svc.hit_ratio * 100)}%</b> cache hits</span>}
+            </div>
           )}
         </div>
         <div className="stack" style={{ gap: 8 }}>
-          <h3>Break something</h3>
+          <div className="title-row">
+            <h3>Break</h3>
+            <InfoTip>Each fault lasts 20 s. Watch whether the system recovers after it ends.</InfoTip>
+          </div>
           <div className="field">
-            <label htmlFor="mag">Slowdown size: {magnitude}×</label>
+            <label htmlFor="mag">Slowdown: {magnitude}×</label>
             <input id="mag" type="range" min={2} max={10} value={magnitude} onChange={(e) => setMagnitude(Number(e.target.value))} />
           </div>
           <div className="fault-grid">
@@ -182,20 +189,19 @@ export default function LiveRunPage() {
               <button className="btn btn-sm" onClick={() => fault("spike", { magnitude: 2 })}>Traffic spike</button>
             )}
           </div>
-          <span className="hint">Each lasts 20 s. Watch whether the system recovers after it ends.</span>
         </div>
         <div className="stack" style={{ gap: 8 }}>
-          <h3>Fix something</h3>
+          <h3>Fix</h3>
           <div className="fault-grid">
             <button className="btn btn-sm" onClick={budgets}>Retry budgets</button>
             <button className="btn btn-sm" onClick={() => send.mutate({ op: "resilience", deadline_propagation: true })}>Deadlines</button>
             <button className="btn btn-sm" onClick={() => send.mutate({ op: "queue", service: target, discipline: "adaptive_lifo", timeout_ms: 500 })}>Shed old work</button>
             <button className="btn btn-sm" onClick={() => send.mutate({ op: "scale", service: target, instances: (svc?.instances ?? 1) + 1 })}>Add instance</button>
           </div>
-          <button className="btn btn-sm btn-ghost" onClick={() => send.mutate({ op: "clear_faults" })}>Clear all faults</button>
+          <button className="btn btn-sm btn-ghost" onClick={() => send.mutate({ op: "clear_faults" })}>Clear faults</button>
         </div>
         <div className="field">
-          <label htmlFor="load">Traffic: {fmtMult(load ?? run.params.load)} today's</label>
+          <label htmlFor="load">Traffic: {fmtMult(load ?? run.params.load)}</label>
           <input
             id="load"
             type="range"
@@ -209,7 +215,7 @@ export default function LiveRunPage() {
           />
         </div>
         <button className="btn btn-sm btn-danger" onClick={() => send.mutate({ op: "stop" })} disabled={state === "ended"}>
-          Stop the run
+          Stop
         </button>
       </aside>
 

@@ -37,7 +37,7 @@ function Chart({ label, value, xs, ys, color, fmt, yMax }: {
         scales: { x: { time: false }, y: { range: (_u, min, max) => [Math.min(0, min), yMax ?? Math.max(max * 1.15, 1e-6)] } },
         axes: [
           { show: false },
-          { stroke: ink, size: 40, grid: { stroke: grid, width: 1 }, ticks: { show: false }, values: (_u, vals) => vals.map(fmt), font: "11px Recursive Variable, sans-serif" },
+          { stroke: ink, size: 40, grid: { stroke: grid, width: 1 }, ticks: { show: false }, values: (_u, vals) => vals.map(fmt), font: "11px -apple-system, \"Inter Variable\", sans-serif" },
         ],
         series: [{}, { stroke, width: 2, fill: `${stroke}22`, points: { show: false } }],
       },

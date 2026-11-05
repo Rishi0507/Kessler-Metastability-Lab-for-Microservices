@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, Play, Save, Wrench } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { useSession } from "../app/session";
 import { toast, toastError, useRegisterCommands } from "../app/stores";
 import { SpecEditor, type SpecEditorHandle } from "../components/SpecEditor";
 import { Topology2D } from "../components/Topology2D";
 import { TriggerDialog, type TriggerChoice } from "../components/TriggerDialog";
-import { Grade, SeverityBadge, Skeleton, StatusDot } from "../components/ui";
+import { Grade, InfoTip, SeverityDot, Skeleton, StatusDot } from "../components/ui";
 import { api, ApiError, newIdempotencyKey, request } from "../lib/api";
 import { fmtAgo, fmtPct } from "../lib/format";
 import type { Analysis, CheckResult, Finding, SystemDetail } from "../lib/types";
@@ -23,26 +23,22 @@ function useDebounced<T>(value: T, ms: number): T {
 
 function FindingsList({ findings, onApply, busy }: { findings: Finding[]; onApply: (f: Finding) => void; busy: boolean }) {
   if (findings.length === 0) {
-    return <p className="muted">No static risks found. A sweep will show how much headroom you really have.</p>;
+    return <p className="muted">No risks found in the spec.</p>;
   }
   return (
-    <ul className="findings">
+    <ul className="rows">
       {findings.map((f) => (
-        <li key={f.id} className={`finding sev-${f.severity}-row`}>
-          <div className="row" style={{ justifyContent: "space-between", gap: 8 }}>
-            <h4>{f.title}</h4>
-            <SeverityBadge severity={f.severity} />
-          </div>
-          <p>{f.detail}</p>
-          {f.fix && (
-            <div className="row" style={{ justifyContent: "space-between" }}>
-              <span className="fix muted">{f.fix}</span>
-              {f.patch.length > 0 && (
-                <button className="btn btn-sm" disabled={busy} onClick={() => onApply(f)}>
-                  <Wrench size={14} /> Apply fix
-                </button>
-              )}
-            </div>
+        <li key={f.id} className="row-item">
+          <SeverityDot severity={f.severity} />
+          <span className="row-title">{f.title}</span>
+          <InfoTip label="Why this is a risk">
+            <p>{f.detail}</p>
+            {f.fix && <p className="tip-fix">Fix: {f.fix}</p>}
+          </InfoTip>
+          {f.patch.length > 0 && (
+            <button className="btn btn-sm" disabled={busy} onClick={() => onApply(f)} title={f.fix ?? "Apply fix"}>
+              <Wrench size={13} /> Fix
+            </button>
           )}
         </li>
       ))}
@@ -168,11 +164,7 @@ export default function SystemPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [dirty, save]);
 
-  const summary = useMemo(() => {
-    const a = live?.ok ? live.analysis : system.data?.checks.analysis;
-    if (!a) return null;
-    return `Saturates at about ${Math.round(a.max_rps)} rps (${a.max_load_multiplier.toFixed(1)}× today's ${Math.round(a.offered_rps)} rps). Bottleneck: ${a.bottleneck}.`;
-  }, [live, system.data]);
+  const capacity = live?.ok ? live.analysis : system.data?.checks.analysis;
 
   if (!loadingUser && !user) return <Navigate to="/" replace />;
   if (system.isError) {
@@ -197,13 +189,32 @@ export default function SystemPage() {
         <span>{s?.name ?? "…"}</span>
       </div>
       <div className="page-head">
-        <div>
+        <div className="stack" style={{ gap: 14 }}>
           <h1 className="display">{s?.name ?? <Skeleton h={34} w={300} />}</h1>
-          {summary && <p className="sub num">{summary}</p>}
+          {capacity && (
+            <div className="stats">
+              <div>
+                <b className="num">{Math.round(capacity.max_rps).toLocaleString()} rps</b>
+                <span>capacity</span>
+              </div>
+              <div>
+                <b className="num">{capacity.max_load_multiplier.toFixed(1)}×</b>
+                <span>headroom</span>
+              </div>
+              <div>
+                <b>{capacity.bottleneck}</b>
+                <span>bottleneck</span>
+              </div>
+              <InfoTip label="About these numbers">
+                Estimated from the spec without simulating: the system saturates at about {Math.round(capacity.max_rps)} rps,{" "}
+                {capacity.max_load_multiplier.toFixed(1)}× today's {Math.round(capacity.offered_rps)} rps.
+              </InfoTip>
+            </div>
+          )}
         </div>
         <div className="spacer" />
         <button className="btn" onClick={() => startRun.mutate()} disabled={startRun.isPending || !s}>
-          <Activity size={16} /> Watch it live
+          <Activity size={16} /> Watch live
         </button>
         <button className="btn btn-primary" onClick={onRunSweep} disabled={!s || startAnalysis.isPending}>
           <Play size={16} /> Find tipping points
@@ -215,7 +226,7 @@ export default function SystemPage() {
           <div className="editor-bar">
             <span className="code">kessler.yaml</span>
             <span className="faint">v{s?.latest_version ?? " - "}</span>
-            {dirty && <span style={{ color: "var(--slow)" }}>unsaved changes</span>}
+            {dirty && <span style={{ color: "var(--slow)" }}>unsaved</span>}
             {issues.length > 0 && <span style={{ color: "var(--meta)" }}>{issues.length} error{issues.length > 1 ? "s" : ""}</span>}
             <div className="spacer" />
             <button className="btn btn-sm" disabled={!dirty || save.isPending || issues.length > 0} onClick={() => save.mutate()}>
@@ -234,53 +245,55 @@ export default function SystemPage() {
         <div className="insight">
           <div className="panel panel-pad grade-card">
             {score ? <Grade score={score.score} grade={score.grade} /> : <Skeleton h={64} w={64} />}
-            <div>
-              <div className="section-title" style={{ marginBottom: 2 }}>
-                Resilience grade
+            <div className="stack" style={{ gap: 2 }}>
+              <div className="title-row">
+                <h2 className="section-title">Resilience grade</h2>
+                <InfoTip>Kessler grades the spec by reading it, before running any simulation. Each risk below lowers the grade.</InfoTip>
               </div>
-              <p className="muted" style={{ fontSize: "var(--t-14)" }}>
+              <p className="muted">
                 {findings.length === 0
-                  ? "No static risks. Run a sweep to measure real headroom."
-                  : `${findings.filter((f) => f.severity === "critical" || f.severity === "high").length} serious and ${
+                  ? "No risks found"
+                  : `${findings.filter((f) => f.severity === "critical" || f.severity === "high").length} serious, ${
                       findings.filter((f) => f.severity === "medium").length
-                    } moderate risks found without running anything.`}
+                    } moderate`}
               </p>
             </div>
           </div>
           {topo && (
             <div className="panel panel-pad">
-              <div className="section-title">Call graph</div>
+              <div className="title-row">
+                <h2 className="section-title">Call graph</h2>
+                <InfoTip>Ring colour shows how busy each service is at today's traffic. Dashed red lines are risky calls.</InfoTip>
+              </div>
               <Topology2D topo={topo} findings={findings} />
             </div>
           )}
           <div className="panel panel-pad">
-            <div className="section-title">Risks</div>
+            <h2 className="section-title">Risks</h2>
             <FindingsList findings={findings} onApply={(f) => applyFix.mutate(f)} busy={applyFix.isPending} />
           </div>
           <div className="panel panel-pad">
-            <div className="section-title">Analyses</div>
+            <div className="title-row">
+              <h2 className="section-title">Analyses</h2>
+              <InfoTip>An analysis simulates this system across load levels and fault sizes, and maps where it stops recovering.</InfoTip>
+            </div>
             {(analyses.data?.items ?? []).length === 0 ? (
-              <p className="muted" style={{ fontSize: "var(--t-14)" }}>
-                None yet. "Find tipping points" maps how much load and how big a fault this system can absorb.
-              </p>
+              <p className="muted">None yet</p>
             ) : (
-              <ul className="findings">
+              <ul className="rows">
                 {analyses.data!.items.map((a) => (
-                  <li key={a.id} className="finding" style={{ paddingLeft: 0 }}>
-                    <Link to={`/analyses/${a.id}`} className="row" style={{ textDecoration: "none", color: "var(--ink)" }}>
+                  <li key={a.id}>
+                    <Link to={`/analyses/${a.id}`} className="row-item row-link">
                       <StatusDot status={a.status} />
-                      <span>
-                        v{a.system_version} · {a.params.trigger.kind}
+                      <span className="row-title">
+                        {a.parent_id ? "With fixes: " : ""}
+                        {a.params.trigger.kind.replace("_", " ")}
                         {a.params.trigger.target ? ` on ${a.params.trigger.target}` : ""}
-                        {a.parent_id ? " · fix experiment" : ""}
                       </span>
-                      <span className="spacer" />
-                      <span className="muted num" style={{ fontSize: "var(--t-14)" }}>
+                      <span className="muted num">
                         {a.status === "done" && a.result ? `${fmtPct(a.result.safe_fraction)} safe` : a.status}
                       </span>
-                      <span className="faint" style={{ fontSize: "var(--t-12)" }}>
-                        {fmtAgo(a.created_at)}
-                      </span>
+                      <span className="faint">{fmtAgo(a.created_at)}</span>
                     </Link>
                   </li>
                 ))}

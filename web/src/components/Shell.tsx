@@ -1,4 +1,4 @@
-import { Moon, Sun } from "lucide-react";
+import { LogOut, Moon, Search, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router";
 import { useSession, useSignOut } from "../app/session";
@@ -45,7 +45,7 @@ export function Shell() {
   return (
     <>
       <header className="shell-bar">
-        <Link to="/" style={{ textDecoration: "none" }}>
+        <Link to="/" className="home-link">
           <Wordmark />
         </Link>
         <nav className="nav" aria-label="Main">
@@ -53,12 +53,13 @@ export function Shell() {
           <NavLink to="/status">Status</NavLink>
         </nav>
         <div className="spacer" />
-        <button className="kbd-hint" onClick={() => setOpen(true)} aria-label="Open command palette">
-          Search and commands <kbd>{mac ? "⌘" : "Ctrl"} K</kbd>
+        <button className="btn btn-ghost icon-btn" onClick={() => setOpen(true)} aria-label="Search and commands" title={`Search and commands (${mac ? "⌘" : "Ctrl"} K)`}>
+          <Search size={17} />
         </button>
         <button
           className="btn btn-ghost icon-btn"
           aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
+          title={dark ? "Light theme" : "Dark theme"}
           onClick={() => {
             applyTheme(dark ? "light" : "dark");
             setDark(!dark);
@@ -67,20 +68,18 @@ export function Shell() {
           {dark ? <Sun size={17} /> : <Moon size={17} />}
         </button>
         {user ? (
-          <div className="row" style={{ gap: 8 }}>
+          <>
             {user.is_guest ? (
-              <button className="btn btn-sm" onClick={() => setAuthOpen(true)}>
+              <button className="btn btn-sm save-work" onClick={() => setAuthOpen(true)}>
                 Save your work
               </button>
             ) : (
-              <span className="muted" style={{ fontSize: "var(--t-14)" }}>
-                {user.handle}
-              </span>
+              <span className="handle">{user.handle}</span>
             )}
-            <button className="btn btn-ghost btn-sm" onClick={() => signOut.mutate()}>
-              Sign out
+            <button className="btn btn-ghost icon-btn" onClick={() => signOut.mutate()} aria-label="Sign out" title="Sign out">
+              <LogOut size={17} />
             </button>
-          </div>
+          </>
         ) : (
           <button className="btn btn-sm" onClick={() => setAuthOpen(true)}>
             Sign in

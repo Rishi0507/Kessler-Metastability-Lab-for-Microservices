@@ -1,44 +1,50 @@
 :root {
-  --paper: #f3f5f8;
+  --paper: #f5f5f7;
   --surface: #ffffff;
-  --surface-2: #f8f9fb;
-  --ink: #121826;
-  --ink-2: #4a5468;
-  --ink-3: #7a8396;
-  --rule: #dce1ea;
-  --rule-2: #c7cedb;
-  --accent: #3346d3;
-  --accent-hover: #2738b8;
+  --surface-2: #f0f0f3;
+  --ink: #1d1d1f;
+  --ink-2: #57575c;
+  --ink-3: #86868b;
+  --rule: rgba(0, 0, 0, 0.08);
+  --rule-2: rgba(0, 0, 0, 0.15);
+  --accent: #0071e3;
+  --accent-hover: #0062c4;
   --accent-ink: #ffffff;
-  --accent-soft: #e8ebfc;
+  --accent-soft: #e5f0fc;
 
   --stable: #1a9a7c;
   --stable-soft: #e1f3ee;
   --slow: #c98a12;
   --slow-soft: #fbf1dc;
-  --meta: #cc2f55;
-  --meta-soft: #fbe6eb;
-  --over: #7c8296;
-  --over-soft: #eceef3;
+  --meta: #d70f3d;
+  --meta-soft: #fde7ec;
+  --over: #8e8e93;
+  --over-soft: #ededf0;
 
-  --shadow-pop: 0 12px 32px -14px rgba(18, 24, 38, 0.32);
-  --shadow-lift: 0 2px 6px -2px rgba(18, 24, 38, 0.12);
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-rule: rgba(0, 0, 0, 0.06);
+  --blur: blur(20px) saturate(180%);
 
-  --radius-s: 6px;
-  --radius-m: 10px;
-  --radius-l: 16px;
+  --shadow-pop: 0 18px 50px -20px rgba(0, 0, 0, 0.28);
+  --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.06);
 
-  --font-ui: "Recursive Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-code: "Recursive Variable", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --radius-l: 20px;
+  --radius-pill: 980px;
+
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter Variable", "Segoe UI", system-ui, sans-serif;
+  --font-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
   --t-12: 0.75rem;
   --t-14: 0.875rem;
   --t-16: 1rem;
   --t-20: 1.25rem;
-  --t-25: 1.5625rem;
-  --t-31: 1.953rem;
-  --t-39: 2.441rem;
-  --t-49: 3.052rem;
+  --t-25: 1.75rem;
+  --t-31: 2.125rem;
+  --t-39: 2.5rem;
+  --t-49: 3.5rem;
 
   --gutter: max(16px, env(safe-area-inset-left, 0px));
   color-scheme: light;
@@ -46,55 +52,59 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #0d1220;
-    --surface: #141b2b;
-    --surface-2: #19223a;
-    --ink: #e6eaf2;
-    --ink-2: #a3acbf;
-    --ink-3: #737d93;
-    --rule: #252f47;
-    --rule-2: #34405e;
-    --accent: #8c9bff;
-    --accent-hover: #a6b2ff;
-    --accent-ink: #0d1220;
-    --accent-soft: #1d2650;
-    --stable: #37cfa6;
-    --stable-soft: #12302b;
-    --slow: #f2b33d;
-    --slow-soft: #3a2c10;
-    --meta: #ff5c86;
-    --meta-soft: #3d1624;
-    --over: #9aa0b5;
-    --over-soft: #232a3c;
-    --shadow-pop: 0 14px 36px -12px rgba(0, 0, 0, 0.6);
-    --shadow-lift: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+    --paper: #000000;
+    --surface: #161617;
+    --surface-2: #1f1f21;
+    --ink: #f5f5f7;
+    --ink-2: #a1a1a6;
+    --ink-3: #6e6e73;
+    --rule: rgba(255, 255, 255, 0.1);
+    --rule-2: rgba(255, 255, 255, 0.18);
+    --accent: #0a84ff;
+    --accent-hover: #409cff;
+    --accent-ink: #ffffff;
+    --accent-soft: #0b2a4a;
+    --stable: #30d158;
+    --stable-soft: #0f2e18;
+    --slow: #ffb340;
+    --slow-soft: #3a2a0c;
+    --meta: #ff453a;
+    --meta-soft: #3d1210;
+    --over: #8e8e93;
+    --over-soft: #232326;
+    --glass: rgba(22, 22, 23, 0.7);
+    --glass-rule: rgba(255, 255, 255, 0.08);
+    --shadow-pop: 0 18px 50px -16px rgba(0, 0, 0, 0.8);
+    --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --paper: #0d1220;
-  --surface: #141b2b;
-  --surface-2: #19223a;
-  --ink: #e6eaf2;
-  --ink-2: #a3acbf;
-  --ink-3: #737d93;
-  --rule: #252f47;
-  --rule-2: #34405e;
-  --accent: #8c9bff;
-  --accent-hover: #a6b2ff;
-  --accent-ink: #0d1220;
-  --accent-soft: #1d2650;
-  --stable: #37cfa6;
-  --stable-soft: #12302b;
-  --slow: #f2b33d;
-  --slow-soft: #3a2c10;
-  --meta: #ff5c86;
-  --meta-soft: #3d1624;
-  --over: #9aa0b5;
-  --over-soft: #232a3c;
-  --shadow-pop: 0 14px 36px -12px rgba(0, 0, 0, 0.6);
-  --shadow-lift: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  --paper: #000000;
+  --surface: #161617;
+  --surface-2: #1f1f21;
+  --ink: #f5f5f7;
+  --ink-2: #a1a1a6;
+  --ink-3: #6e6e73;
+  --rule: rgba(255, 255, 255, 0.1);
+  --rule-2: rgba(255, 255, 255, 0.18);
+  --accent: #0a84ff;
+  --accent-hover: #409cff;
+  --accent-ink: #ffffff;
+  --accent-soft: #0b2a4a;
+  --stable: #30d158;
+  --stable-soft: #0f2e18;
+  --slow: #ffb340;
+  --slow-soft: #3a2a0c;
+  --meta: #ff453a;
+  --meta-soft: #3d1210;
+  --over: #8e8e93;
+  --over-soft: #232326;
+  --glass: rgba(22, 22, 23, 0.7);
+  --glass-rule: rgba(255, 255, 255, 0.08);
+  --shadow-pop: 0 18px 50px -16px rgba(0, 0, 0, 0.8);
+  --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.5);
   color-scheme: dark;
 }
 
@@ -115,10 +125,9 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-ui);
-  font-size: var(--t-16);
-  line-height: 1.55;
-  font-variation-settings: "MONO" 0, "CASL" 0, "CRSV" 0.5;
-  font-weight: 420;
+  font-size: 15px;
+  line-height: 1.47;
+  letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -128,15 +137,15 @@ h2,
 h3,
 h4 {
   margin: 0;
-  line-height: 1.15;
+  line-height: 1.12;
   text-wrap: balance;
-  font-weight: 720;
+  font-weight: 600;
 }
 
 .display {
-  font-variation-settings: "MONO" 0, "CASL" 0.65, "CRSV" 1;
-  font-weight: 780;
-  letter-spacing: -0.015em;
+  font-family: var(--font-display);
+  font-weight: 650;
+  letter-spacing: -0.025em;
 }
 
 p {
@@ -148,8 +157,8 @@ kbd,
 pre,
 .code {
   font-family: var(--font-code);
-  font-variation-settings: "MONO" 1, "CASL" 0;
-  font-size: 0.92em;
+  font-size: 0.9em;
+  letter-spacing: 0;
 }
 
 .num {
@@ -158,14 +167,17 @@ pre,
 
 a {
   color: var(--accent);
-  text-decoration-thickness: 1px;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 ::selection {

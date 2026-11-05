@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, Share2, Sparkles, Square } from "lucide-react";
+import { Activity, ArrowRight, Share2, Sparkles, Square } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { useSession } from "../app/session";
 import { toast, toastError, useRegisterCommands } from "../app/stores";
 import { MetastabilityMap, type MapCell } from "../components/MetastabilityMap";
-import { SeverityBadge, Skeleton, StatusDot } from "../components/ui";
+import { InfoTip, SeverityDot, Skeleton, StatusDot } from "../components/ui";
 import { api, ApiError, newIdempotencyKey } from "../lib/api";
 import { aggregate, cellState, STATE_LABEL } from "../lib/cells";
 import { axisValue, fmtCount, fmtMult, fmtPct, fmtSeconds, triggerPhrase } from "../lib/format";
@@ -110,7 +110,7 @@ function TerrainView({ params, cells }: { params: SweepParams; cells: MapCell[] 
   return (
     <div className="terrain-host" ref={host} role="img" aria-label="3D terrain of the metastability map. Plateaus are combinations that never recover.">
       <p className="hint" style={{ position: "absolute", left: 8, bottom: 6 }}>
-        Drag to orbit. Plateaus never recover; the blue sheet is today's traffic.
+        Drag to orbit
       </p>
     </div>
   );
@@ -219,12 +219,12 @@ export default function AnalysisPage() {
         <span>Analysis</span>
       </div>
       <div className="page-head">
-        <div>
-          <h1 className="display">What happens after {triggerPhrase(params.trigger)}</h1>
-          <p className="sub">
+        <div className="title-row">
+          <h1 className="display">After {triggerPhrase(params.trigger)}</h1>
+          <InfoTip label="About this sweep">
             Version {a.system_version}, {params.values.length} trigger sizes by {params.loads.length} load levels, {params.seeds}{" "}
             {params.seeds === 1 ? "run" : "runs"} per cell{a.parent_id ? ", with every recommended fix applied" : ""}.
-          </p>
+          </InfoTip>
         </div>
         <div className="spacer" />
         {running ? (
@@ -238,7 +238,7 @@ export default function AnalysisPage() {
             </button>
             {!a.parent_id && a.status === "done" && (
               <button className="btn btn-primary" onClick={() => experiment.mutate()} disabled={experiment.isPending}>
-                <Sparkles size={15} /> Apply all fixes and compare
+                <Sparkles size={15} /> Fix and compare
               </button>
             )}
           </>
@@ -252,9 +252,10 @@ export default function AnalysisPage() {
               <button aria-pressed={view === "map"} onClick={() => setView("map")}>Map</button>
               <button aria-pressed={view === "terrain"} onClick={() => setView("terrain")}>Terrain</button>
             </div>
-            <span className="muted" style={{ fontSize: "var(--t-14)" }}>
-              Rows: {params.trigger.kind === "crash" ? "outage length" : "trigger size"}. Columns: load. Click a cell for details.
-            </span>
+            <InfoTip label="How to read the map">
+              Each cell is one load level (column) and one {params.trigger.kind === "crash" ? "outage length" : "fault size"} (row). The
+              line marks the tipping boundary. Click a cell for details.
+            </InfoTip>
           </div>
           {view === "map" ? (
             <MetastabilityMap params={params} cells={cells} selected={selected} onSelect={setSelected} />
@@ -262,11 +263,11 @@ export default function AnalysisPage() {
             <TerrainView params={params} cells={cells} />
           )}
           <div className="legend" aria-hidden="true">
-            <span><i className="sw stable" />Recovers within 10 s</span>
+            <span><i className="sw stable" />Recovers</span>
             <span><i className="sw slow" />Recovers slowly</span>
             <span><i className="sw metastable" />Never recovers</span>
-            <span><i className="sw overloaded" />Overloaded before the trigger</span>
-            <span><i className="sw inferred" />Inferred, not simulated</span>
+            <span><i className="sw overloaded" />Overloaded</span>
+            <span><i className="sw inferred" />Inferred</span>
           </div>
         </div>
 
@@ -275,7 +276,7 @@ export default function AnalysisPage() {
             <div className="row" style={{ gap: 8 }}>
               <StatusDot status={a.status} />
               <span className="muted" style={{ fontSize: "var(--t-14)" }}>
-                {running ? `Simulating: ${simsDone} of ${total || "…"} runs` : a.status === "done" ? "Finished" : a.status}
+                {running ? `${simsDone} of ${total || "…"} simulations` : a.status === "done" ? "Finished" : a.status}
               </span>
             </div>
             {running && (
@@ -284,12 +285,10 @@ export default function AnalysisPage() {
               </div>
             )}
             {headline ? (
-              <>
-                <div className="row" style={{ justifyContent: "space-between" }}>
-                  <h2 className="display">{headline.title}</h2>
-                </div>
-                <p className="muted">{headline.detail}</p>
-              </>
+              <div className="title-row">
+                <h2 className="display">{headline.title}</h2>
+                <InfoTip>{headline.detail}</InfoTip>
+              </div>
             ) : firstBad >= 0 ? (
               <h2 className="display">
                 Already found a tipping point at {fmtMult(params.loads[firstBad % params.loads.length] ?? 0)} load.
@@ -299,13 +298,13 @@ export default function AnalysisPage() {
             )}
             {result && (
               <dl className="kv">
-                <dt>Safe combinations</dt>
-                <dd>{fmtPct(result.safe_fraction)} of the map</dd>
-                <dt>Simulations run</dt>
+                <dt>Safe</dt>
+                <dd>{fmtPct(result.safe_fraction)}</dd>
+                <dt>Simulations</dt>
                 <dd>{result.savings.simulated_sims} of {result.savings.full_grid_sims}</dd>
-                <dt>Skipped by adaptive search</dt>
+                <dt>Skipped</dt>
                 <dd>{fmtPct(result.savings.avoided_fraction)}</dd>
-                <dt>Served from cache</dt>
+                <dt>From cache</dt>
                 <dd>{a.sims_cached}</dd>
                 {a.time_to_first_insight_s !== undefined && (
                   <>
@@ -319,15 +318,15 @@ export default function AnalysisPage() {
 
           {result && result.findings.length > 1 && (
             <div className="panel panel-pad">
-              {result.findings.slice(1).map((f) => (
-                <div key={f.rule} className="stack" style={{ gap: 6 }}>
-                  <div className="row" style={{ justifyContent: "space-between" }}>
-                    <h3 style={{ fontSize: "var(--t-16)" }}>{f.title}</h3>
-                    <SeverityBadge severity={f.severity} />
-                  </div>
-                  <p className="muted" style={{ fontSize: "var(--t-14)" }}>{f.detail}</p>
-                </div>
-              ))}
+              <ul className="rows">
+                {result.findings.slice(1).map((f) => (
+                  <li key={f.rule} className="row-item">
+                    <SeverityDot severity={f.severity} />
+                    <span className="row-title">{f.title}</span>
+                    <InfoTip>{f.detail}</InfoTip>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
@@ -340,13 +339,13 @@ export default function AnalysisPage() {
                 <>
                   <p className="muted">{STATE_LABEL[cellState(sel.agg)]}.</p>
                   <dl className="kv">
-                    <dt>Runs that never recovered</dt>
+                    <dt>Never recovered</dt>
                     <dd>{fmtPct(sel.agg.p_metastable)}</dd>
                     <dt>Median recovery</dt>
-                    <dd>{sel.agg.recovery_s === null ? "never (most runs did not recover)" : fmtSeconds(sel.agg.recovery_s)}</dd>
-                    <dt>Peak load amplification</dt>
+                    <dd>{sel.agg.recovery_s === null ? "never" : fmtSeconds(sel.agg.recovery_s)}</dd>
+                    <dt>Peak amplification</dt>
                     <dd>{fmtMult(sel.agg.peak_amplification)}</dd>
-                    <dt>Work nobody waited for</dt>
+                    <dt>Wasted work</dt>
                     <dd>{fmtPct(sel.agg.wasted_fraction)}</dd>
                     <dt>Requests lost</dt>
                     <dd>{fmtCount(sel.agg.lost_requests)}</dd>
@@ -355,11 +354,11 @@ export default function AnalysisPage() {
               ) : (
                 <p className="muted">
                   {sel.pending
-                    ? "Still simulating this combination."
+                    ? "Still simulating."
                     : sel.inferred === "overloaded"
-                      ? "Not simulated: at this load the system is already overloaded before any trigger (found in another row)."
+                      ? "Inferred: overloaded before any fault at this load."
                       : sel.inferred
-                        ? "Not simulated: the outcome follows from the simulated loads on either side."
+                        ? "Inferred from the loads on either side."
                         : "Not simulated."}
                 </p>
               )}
@@ -373,13 +372,18 @@ export default function AnalysisPage() {
 
       {a.parent_id && parent.data && (
         <section className="stack" style={{ marginTop: 28 }}>
-          <h2 className="display" style={{ fontSize: "var(--t-25)" }}>
-            Before and after the fixes
-          </h2>
+          <div className="title-row">
+            <h2 className="display" style={{ fontSize: "var(--t-25)" }}>
+              Before and after
+            </h2>
+            <InfoTip>Both sweeps used the same loads, faults and random seeds, so the difference comes from the fixes alone.</InfoTip>
+          </div>
           {result && parentResult && (
-            <p className="muted">
-              Safe combinations went from {fmtPct(parentResult.safe_fraction)} to {fmtPct(result.safe_fraction)}. Both sweeps used the
-              same loads, triggers and random seeds, so the difference comes from the configuration change alone.
+            <p className="delta num">
+              <span>{fmtPct(parentResult.safe_fraction)}</span>
+              <ArrowRight size={22} aria-label="to" />
+              <b>{fmtPct(result.safe_fraction)}</b>
+              <span className="muted">safe</span>
             </p>
           )}
           <div className="row" style={{ alignItems: "flex-start", gap: 20 }}>
