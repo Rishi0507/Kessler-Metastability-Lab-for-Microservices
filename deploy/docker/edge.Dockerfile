@@ -7,7 +7,7 @@ RUN npm ci --no-audit --no-fund
 COPY web/ ./
 RUN npm run build
 
-FROM nginx:1.30-alpine
+FROM nginx:1.31-alpine
 COPY deploy/nginx/edge.conf /etc/nginx/nginx.conf
 COPY deploy/nginx/l4.conf /etc/nginx/l4.conf
 COPY deploy/nginx/edge-http.conf deploy/nginx/edge-server.conf /etc/nginx/
