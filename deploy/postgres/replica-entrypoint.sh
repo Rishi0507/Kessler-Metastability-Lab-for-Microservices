@@ -9,4 +9,4 @@ if [ ! -s "$PGDATA/PG_VERSION" ]; then
   done
   chmod 0700 "$PGDATA"
 fi
-exec postgres -c hot_standby=on
+exec postgres -c hot_standby=on -c max_connections=200

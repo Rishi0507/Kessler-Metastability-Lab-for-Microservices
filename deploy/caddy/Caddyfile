@@ -1,0 +1,9 @@
+{$KESSLER_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy lb:8080 {
+		transport http {
+			proxy_protocol v2
+			keepalive off
+		}
+	}
+}

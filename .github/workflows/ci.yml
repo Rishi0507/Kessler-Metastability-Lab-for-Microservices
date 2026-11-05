@@ -105,3 +105,23 @@ jobs:
       - uses: actions/checkout@v7
       - run: docker build -f deploy/docker/backend.Dockerfile -t kessler/backend:ci .
       - run: docker build -f deploy/docker/edge.Dockerfile -t kessler/edge:ci .
+
+  stack:
+    name: production stack over HTTPS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Production settings
+        run: |
+          cp .env.prod.example .env
+          sed -i 's|^KESSLER_DOMAIN=.*|KESSLER_DOMAIN=localhost|; s|^KESSLER_PUBLIC_URL=.*|KESSLER_PUBLIC_URL=https://localhost|' .env
+          for k in KESSLER_JWT_SECRET KESSLER_STREAM_SECRET POSTGRES_PASSWORD REPLICATION_PASSWORD; do
+            sed -i "s|^$k=.*|$k=$(openssl rand -hex 32)|" .env
+          done
+      - name: Start
+        run: docker compose -f docker-compose.yml -f deploy/compose.prod.yml up -d --build
+      - name: Smoke test over HTTPS
+        run: python3 scripts/smoke.py https://localhost --insecure --timeout 600
+      - name: Logs
+        if: failure()
+        run: docker compose -f docker-compose.yml -f deploy/compose.prod.yml logs --tail 150

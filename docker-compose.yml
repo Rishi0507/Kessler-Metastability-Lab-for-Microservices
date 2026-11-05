@@ -6,8 +6,12 @@ x-backend: &backend
   restart: unless-stopped
   environment: &backend-env
     KESSLER_ENV: ${KESSLER_ENV:-dev}
-    KESSLER_PUBLIC_URL: http://localhost:8080
-    KESSLER_DATABASE_URL: postgresql://kessler:${POSTGRES_PASSWORD:-kessler}@pgbouncer:6432/kessler
+    KESSLER_PUBLIC_URL: ${KESSLER_PUBLIC_URL:-http://localhost:8080}
+    KESSLER_COOKIE_SECURE: ${KESSLER_COOKIE_SECURE:-false}
+    KESSLER_MAX_ACTIVE_ANALYSES_PER_USER: ${KESSLER_MAX_ACTIVE_ANALYSES_PER_USER:-3}
+    KESSLER_MAX_SIMS_PER_ANALYSIS: ${KESSLER_MAX_SIMS_PER_ANALYSIS:-600}
+    KESSLER_ADMISSION_QUEUE_LIMIT: ${KESSLER_ADMISSION_QUEUE_LIMIT:-20000}
+    KESSLER_DATABASE_URL: postgresql://kessler:${POSTGRES_PASSWORD:-kessler}@pgbouncer:5432/kessler
     KESSLER_DATABASE_REPLICA_URL: postgresql://kessler:${POSTGRES_PASSWORD:-kessler}@postgres-replica:5432/kessler
     KESSLER_DB_STATEMENT_CACHE_SIZE: "0"
     KESSLER_REDIS_URL: redis://redis:6379/0
@@ -39,7 +43,7 @@ services:
     command: ["postgres", "-c", "wal_level=replica", "-c", "max_wal_senders=8", "-c", "wal_keep_size=512MB",
               "-c", "max_connections=200", "-c", "shared_buffers=256MB", "-c", "log_min_duration_statement=250"]
     volumes:
-      - pg-primary:/var/lib/postgresql/data
+      - pg-primary:/var/lib/postgresql
       - ./deploy/postgres/primary-init.sh:/docker-entrypoint-initdb.d/01-replication.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kessler -d kessler"]
@@ -51,11 +55,11 @@ services:
     restart: unless-stopped
     user: postgres
     environment:
-      PGDATA: /var/lib/postgresql/data/pgdata
+      PGDATA: /var/lib/postgresql/18/docker
       REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicate}
     entrypoint: ["/bin/sh", "/replica-entrypoint.sh"]
     volumes:
-      - pg-replica:/var/lib/postgresql/data
+      - pg-replica:/var/lib/postgresql
       - ./deploy/postgres/replica-entrypoint.sh:/replica-entrypoint.sh:ro
     depends_on:
       postgres:
@@ -188,7 +192,7 @@ services:
     volumes:
       - ./deploy/prometheus:/etc/prometheus:ro
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
 
   grafana:
     image: grafana/grafana:12.1.0
@@ -200,14 +204,14 @@ services:
       - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on: [prometheus]
 
   jaeger:
     image: jaegertracing/jaeger:2.9.0
     restart: unless-stopped
     ports:
-      - "16686:16686"
+      - "127.0.0.1:16686:16686"
 
 volumes:
   pg-primary:

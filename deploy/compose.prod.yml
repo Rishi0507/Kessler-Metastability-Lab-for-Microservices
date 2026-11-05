@@ -1,0 +1,21 @@
+services:
+  lb:
+    ports: !reset []
+    volumes:
+      - ./deploy/caddy/l4-listen.conf:/etc/nginx/l4-listen.conf:ro
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      KESSLER_DOMAIN: ${KESSLER_DOMAIN:?set KESSLER_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on: [lb]
+
+volumes:
+  caddy-data:
