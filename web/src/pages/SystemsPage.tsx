@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { useAfterSignIn, useSession } from "../app/session";
-import { toastError, useRegisterCommands } from "../app/stores";
+import { toast, toastError, useRegisterCommands } from "../app/stores";
 import { Dialog, InfoTip, Skeleton, useTitle } from "../components/ui";
-import { api } from "../lib/api";
+import { api, ApiError } from "../lib/api";
 import { fmtAgo } from "../lib/format";
 import type { SystemDetail, SystemSummary, Template } from "../lib/types";
 
@@ -57,6 +57,7 @@ export default function SystemsPage() {
   const [params, setParams] = useSearchParams();
   const [picking, setPicking] = useState(false);
   const [removing, setRemoving] = useState<SystemSummary | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
   const started = useRef(false);
 
   const systems = useQuery({
@@ -76,6 +77,19 @@ export default function SystemsPage() {
       void qc.invalidateQueries({ queryKey: ["systems"] });
     },
     onError: (e) => toastError((e as Error).message),
+  });
+  const importTraces = useMutation({
+    mutationFn: async (file: File) => {
+      if (file.size > 8 * 1024 * 1024) throw new Error("Trace files up to 8 MB are supported. Export a shorter time window.");
+      const name = file.name.replace(/\.[^.]+$/, "").slice(0, 80) || "Imported system";
+      return api.post<{ yaml: string; notes: string[] }>("/api/v1/specs/import", { traces: await file.text(), name });
+    },
+    onSuccess: (r) => {
+      setPicking(false);
+      r.notes.forEach((n) => toast(n));
+      create.mutate({ yaml: r.yaml });
+    },
+    onError: (e) => toastError((e as ApiError).detail ?? (e as Error).message),
   });
   const create = useMutation({
     mutationFn: (t: { yaml: string; id?: string }) =>
@@ -215,7 +229,7 @@ export default function SystemsPage() {
         ) : (
           <Skeleton h={160} />
         )}
-        <div>
+        <div className="row">
           <button
             className="btn"
             disabled={create.isPending}
@@ -226,6 +240,24 @@ export default function SystemsPage() {
           >
             Start blank
           </button>
+          <button className="btn" disabled={importTraces.isPending} onClick={() => fileInput.current?.click()}>
+            <Upload size={15} /> {importTraces.isPending ? "Importing…" : "Import traces"}
+          </button>
+          <InfoTip label="About importing traces">
+            Upload OpenTelemetry traces as OTLP JSON, for example from the collector's file exporter. Kessler reads the services,
+            call graph, traffic and latency from them. Check the timeouts afterwards: traces cannot show them.
+          </InfoTip>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".json,.jsonl,application/json"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) importTraces.mutate(f);
+            }}
+          />
         </div>
       </Dialog>
     </div>

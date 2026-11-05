@@ -414,7 +414,7 @@ permanent.
   instant first-pass estimate.
 
 **Future work:**
-* Infer a spec from OpenTelemetry traces (calibration).
+* Read timeouts, retry backoff and pool sizes from client config, to complete specs imported from OpenTelemetry traces.
 * A GitHub App that comments the map diff on PRs.
 * Multi-region topologies.
 * An analytic CTMC fast path.

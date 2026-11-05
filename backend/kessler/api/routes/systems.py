@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from ...errors import ApiError
 from ...spec import PatchError, apply_patch, check
+from ...spec.otel import TraceImportError, import_otlp
 from ...spec.templates import all_templates
 from ..common import JSON, decode_cursor, encode_cursor, etag_for_version, log_activity, parse_if_match
 from ..deps import Ctx, IfMatch, IfNoneMatch, MinLsn, User, limit, parse_uuid
@@ -63,6 +64,21 @@ async def templates() -> Response:
 async def check_spec(body: CheckIn, user: User, ctx: Ctx) -> dict[str, Any]:
     await limit(ctx, "read", user.user_id)
     return check(body.yaml)
+
+
+class ImportIn(BaseModel):
+    traces: str = Field(max_length=8 * 1024 * 1024)
+    name: str = Field("Imported system", min_length=1, max_length=80)
+
+
+@router.post("/specs/import")
+async def import_spec(body: ImportIn, user: User, ctx: Ctx) -> dict[str, Any]:
+    await limit(ctx, "write", user.user_id)
+    try:
+        text, notes = import_otlp(body.traces, body.name)
+    except TraceImportError as e:
+        raise ApiError(422, "invalid_traces", str(e)) from None
+    return {"yaml": text, "notes": notes}
 
 
 class ApplyIn(BaseModel):
