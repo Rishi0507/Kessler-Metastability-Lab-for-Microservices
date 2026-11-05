@@ -8,7 +8,7 @@ export function Home() {
   const { data: user, isLoading } = useSession();
   const next = useAfterSignIn((s) => s.path);
   if (isLoading) return null;
-  if (user) return <Navigate to={next ?? "/systems"} replace />;
+  if (user && next) return <Navigate to={next} replace />;
   return (
     <Suspense fallback={null}>
       <Landing />

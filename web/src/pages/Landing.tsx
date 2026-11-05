@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { useAfterSignIn, useGuestSignIn } from "../app/session";
+import { Link, useNavigate } from "react-router";
+import { useAfterSignIn, useGuestSignIn, useSession } from "../app/session";
 import { toastError, useCommands } from "../app/stores";
 import { EnergyLandscape, type HeroPhase } from "../three/EnergyLandscape";
 import { InfoTip } from "../components/ui";
@@ -21,11 +22,17 @@ export default function Landing() {
     s.onPhase = setPhase;
     return s;
   });
+  const { data: user } = useSession();
+  const navigate = useNavigate();
   const guest = useGuestSignIn();
   const setNext = useAfterSignIn((s) => s.set);
   const setAuthOpen = useCommands((s) => s.setAuthOpen);
 
   const tryIt = () => {
+    if (user) {
+      navigate("/systems?start=checkout-retry-storm");
+      return;
+    }
     setNext("/systems?start=checkout-retry-storm");
     guest.mutate(undefined, {
       onError: (e) => {
@@ -42,15 +49,30 @@ export default function Landing() {
           <h1 className="display">Your services have a second stable state. It is an outage.</h1>
           <p className="lede">See where a short incident turns into one that never ends.</p>
           <div className="row">
-            <button className="btn btn-primary btn-lg" onClick={tryIt} disabled={guest.isPending}>
-              {guest.isPending ? "Setting up…" : "Try an example"}
-            </button>
-            <button className="btn btn-lg" onClick={() => setAuthOpen(true)}>
-              Sign in
-            </button>
-            <InfoTip label="About the example">
-              No signup needed. Kessler simulates a sample checkout service; nothing touches your infrastructure.
-            </InfoTip>
+            {user ? (
+              <>
+                <Link className="btn btn-primary btn-lg" to="/systems">
+                  Open your systems
+                </Link>
+                <button className="btn btn-lg" onClick={tryIt}>
+                  Try an example
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn btn-primary btn-lg" onClick={tryIt} disabled={guest.isPending}>
+                  {guest.isPending ? "Setting up…" : "Try an example"}
+                </button>
+                <button className="btn btn-lg" onClick={() => setAuthOpen(true)}>
+                  Sign in
+                </button>
+              </>
+            )}
+            {!user && (
+              <InfoTip label="About the example">
+                No signup needed. Kessler simulates a sample checkout service; nothing touches your infrastructure.
+              </InfoTip>
+            )}
           </div>
         </div>
         <div className="hero-canvas" ref={host} aria-hidden="true">
