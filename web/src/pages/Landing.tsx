@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useAfterSignIn, useGuestSignIn } from "../app/session";
 import { toastError, useCommands } from "../app/stores";
 import { EnergyLandscape, type HeroPhase } from "../three/EnergyLandscape";
+import { InfoTip } from "../components/ui";
 import { useScene } from "../three/useScene";
 
 const CAPTIONS: Record<HeroPhase, string> = {
@@ -39,21 +40,18 @@ export default function Landing() {
       <section className="hero">
         <div className="hero-copy">
           <h1 className="display">Your services have a second stable state. It is an outage.</h1>
-          <p className="lede">
-            Kessler simulates your timeouts, retries, queues and autoscaling under thousands of load and fault
-            combinations, and shows exactly where a short incident turns into one that keeps itself going.
-          </p>
+          <p className="lede">See where a short incident turns into one that never ends.</p>
           <div className="row">
             <button className="btn btn-primary btn-lg" onClick={tryIt} disabled={guest.isPending}>
-              {guest.isPending ? "Setting up a workspace…" : "Try it on an example system"}
+              {guest.isPending ? "Setting up…" : "Try an example"}
             </button>
             <button className="btn btn-lg" onClick={() => setAuthOpen(true)}>
               Sign in
             </button>
+            <InfoTip label="About the example">
+              No signup needed. Kessler simulates a sample checkout service; nothing touches your infrastructure.
+            </InfoTip>
           </div>
-          <p className="faint" style={{ fontSize: "var(--t-14)" }}>
-            No signup needed for the example. Nothing is installed or connected to your infrastructure.
-          </p>
         </div>
         <div className="hero-canvas" ref={host} aria-hidden="true">
           <p className="hero-caption" aria-live="polite">
@@ -64,25 +62,16 @@ export default function Landing() {
       <section className="how" aria-label="How it works">
         <ol>
           <li>
-            <span className="step">1. Describe</span>
-            <p>
-              Write your system in a short YAML file: services, timeouts, retries, budgets, breakers, queues and
-              caches. Kessler flags risky settings as you type.
-            </p>
+            <span className="step">1</span>
+            <p>Describe your services in YAML</p>
           </li>
           <li>
-            <span className="step">2. Sweep</span>
-            <p>
-              A deterministic C++ simulator runs your system across load levels and trigger sizes, and maps where it
-              recovers, where it recovers slowly, and where it never comes back.
-            </p>
+            <span className="step">2</span>
+            <p>Map where they stop recovering</p>
           </li>
           <li>
-            <span className="step">3. Fix and compare</span>
-            <p>
-              Apply the suggested fixes and re-run the same sweep with the same random seeds, so the difference you
-              see comes from the fix alone.
-            </p>
+            <span className="step">3</span>
+            <p>Apply a fix and compare</p>
           </li>
         </ol>
       </section>

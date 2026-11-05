@@ -1,4 +1,4 @@
-import "@fontsource-variable/recursive/full.css";
+import "@fontsource-variable/inter/opsz.css";
 import "./styles/tokens.css";
 import "./styles/app.css";
 

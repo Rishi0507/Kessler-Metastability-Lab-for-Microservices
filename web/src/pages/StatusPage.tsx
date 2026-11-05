@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Skeleton } from "../components/ui";
+import { InfoTip, Skeleton } from "../components/ui";
 import { api } from "../lib/api";
 import { fmtCount, fmtPct, fmtSeconds } from "../lib/format";
 
@@ -66,18 +66,16 @@ export default function StatusPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <div>
-          <h1 className="display">Platform status</h1>
-          <p className="sub">
-            Live numbers from every Kessler service, refreshed every 5 seconds. The same figures are exported to Prometheus.
-          </p>
+        <div className="title-row">
+          <h1 className="display">Status</h1>
+          <InfoTip>Live numbers from every Kessler service, refreshed every 5 seconds. Prometheus exports the same figures.</InfoTip>
         </div>
       </div>
       {!k ? (
         <Skeleton h={360} />
       ) : (
         <div className="stack" style={{ gap: 28 }}>
-          <section className="panel">
+          <section className="panel" style={{ overflowX: "auto" }}>
             <table className="slo-table">
               <thead>
                 <tr>

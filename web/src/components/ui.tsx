@@ -1,6 +1,51 @@
-import { X } from "lucide-react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { Info, X } from "lucide-react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import type { Severity } from "../lib/types";
+
+export function InfoTip({ children, label = "More information" }: { children: ReactNode; label?: string }) {
+  const id = useId();
+  const btn = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<{ x: number; y: number; up: boolean } | null>(null);
+  const show = () => {
+    const r = btn.current?.getBoundingClientRect();
+    if (!r) return;
+    const x = Math.min(Math.max(r.left + r.width / 2, 160), window.innerWidth - 160);
+    const up = r.bottom > window.innerHeight - 180;
+    setPos({ x, y: up ? r.top - 8 : r.bottom + 8, up });
+  };
+  const hide = () => setPos(null);
+  return (
+    <>
+      <button
+        ref={btn}
+        type="button"
+        className="info-btn"
+        aria-label={label}
+        aria-describedby={pos ? id : undefined}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (pos) hide();
+          else show();
+        }}
+        onKeyDown={(e) => e.key === "Escape" && hide()}
+      >
+        <Info size={15} strokeWidth={1.9} />
+      </button>
+      {pos &&
+        createPortal(
+          <div id={id} role="tooltip" className={`tip${pos.up ? " up" : ""}`} style={{ left: pos.x, top: pos.y }}>
+            {children}
+          </div>,
+          document.body,
+        )}
+    </>
+  );
+}
 
 export function Wordmark() {
   return (
@@ -97,8 +142,8 @@ const SEV_TEXT: Record<Severity, string> = {
   info: "Note",
 };
 
-export function SeverityBadge({ severity }: { severity: Severity }) {
-  return <span className={`sev sev-${severity}`}>{SEV_TEXT[severity]}</span>;
+export function SeverityDot({ severity }: { severity: Severity }) {
+  return <span className={`sev-dot sev-${severity}`} role="img" aria-label={SEV_TEXT[severity]} title={SEV_TEXT[severity]} />;
 }
 
 export function StatusDot({ status }: { status: string }) {

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { MetastabilityMap, type MapCell } from "../components/MetastabilityMap";
-import { SeverityBadge, Skeleton } from "../components/ui";
+import { InfoTip, SeverityDot, Skeleton } from "../components/ui";
 import { api } from "../lib/api";
 import { aggregate } from "../lib/cells";
 import { fmtPct, triggerPhrase } from "../lib/format";
@@ -67,15 +67,19 @@ export default function ReportPage() {
           <MetastabilityMap params={p} cells={cells} />
         </div>
         <aside className="stack">
-          {r.analysis.result.findings.map((f) => (
-            <div key={f.rule} className="panel panel-pad stack" style={{ gap: 6 }}>
-              <div className="row" style={{ justifyContent: "space-between" }}>
-                <h2 className="display" style={{ fontSize: "var(--t-20)" }}>{f.title}</h2>
-                <SeverityBadge severity={f.severity} />
-              </div>
-              <p className="muted">{f.detail}</p>
+          {r.analysis.result.findings.length > 0 && (
+            <div className="panel panel-pad">
+              <ul className="rows">
+                {r.analysis.result.findings.map((f) => (
+                  <li key={f.rule} className="row-item">
+                    <SeverityDot severity={f.severity} />
+                    <span className="row-title">{f.title}</span>
+                    <InfoTip>{f.detail}</InfoTip>
+                  </li>
+                ))}
+              </ul>
             </div>
-          ))}
+          )}
           <details className="panel panel-pad">
             <summary style={{ cursor: "pointer", fontWeight: 600 }}>System spec</summary>
             <pre className="code" style={{ overflowX: "auto", fontSize: 12.5, marginTop: 12 }}>{r.system.spec_yaml}</pre>

@@ -92,8 +92,7 @@ export function Topology2D({ topo, findings }: { topo: Topology; findings: Findi
   return (
     <>
       <p className="hint">
-        {ids.length - 1} services. Scroll to explore; hover an edge or service for details. Dashed red marks the worst
-        places behind each serious risk.
+        {ids.length - 1} services. Scroll to explore.
       </p>
       <div className="topo2d-scroll" tabIndex={0} aria-label="Call graph, scrollable">
         {svg}
