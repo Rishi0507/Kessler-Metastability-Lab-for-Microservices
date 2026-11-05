@@ -1,12 +1,12 @@
 # Progress
 
-Kept current so work can resume from any point.
+What exists today and what comes next.
 
 ## Done
 
 - [x] Idea validation (competitors: Rootly Academy/Uptime Labs, YouBrokeProd, Faultline, Breakscale, systemInPain; research: AWS "Analyzing Metastable Failures" HotOS '25, arXiv 2510.03551). Re-checked 2026-11-01: the closest work models one service at a time and lists multi-service topologies, recovery actions and a usable tool as open problems; small open-source explorers cover a service and one dependency.
 - [x] System design ([DESIGN.md](DESIGN.md)) and a published System Design page
-- [x] C++20 engine: DES core, resilience models, contention/congestive collapse, static analysis, C ABI, CLI, 31 tests (queueing-theory validated)
+- [x] C++20 engine: DES core, resilience models, contention/congestive collapse, static analysis, C ABI, CLI, 33 tests (queueing-theory validated)
 - [x] Python spec layer: YAML format, compiler, 11 lint rules with fix patches (consolidated per rule on large systems), format-preserving Apply fix, 8 templates including a 45-service system and two real outages
 - [x] Adaptive sweep planner (stateless bisection, overload shared per load column) and findings
 - [x] api, scheduler, worker, gateway, nginx L4 + 2x L7, devstack, docker compose, observability, CI
@@ -31,4 +31,4 @@ Kept current so work can resume from any point.
 
 - [ ] Load test with many concurrent users (API latency, WebSocket fan-out, fair share across tenants)
 - [ ] Browser walkthrough of every page in both themes, on a focused window (Chrome demotes unfocused tabs to idle priority, which made sweeps look frozen in automation)
-- [ ] Deployment (to be discussed)
+- [ ] Production deployment
