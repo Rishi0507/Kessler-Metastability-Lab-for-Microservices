@@ -89,7 +89,10 @@ function useAnalysisStream(id: string, enabled: boolean) {
               }
             : old,
         );
-        if (ev.status === "done") void qc.invalidateQueries({ queryKey: ["analyses"] });
+        if (ev.status === "done") {
+          void qc.invalidateQueries({ queryKey: ["analyses"] });
+          void qc.invalidateQueries({ queryKey: ["analysis", id] });
+        }
       }
     });
   }, [stream, status, id, qc]);
