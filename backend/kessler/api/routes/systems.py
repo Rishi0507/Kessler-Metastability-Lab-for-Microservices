@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from ...errors import ApiError
 from ...spec import PatchError, apply_patch, check
+from ...spec.istio import MeshImportError, import_istio
 from ...spec.otel import TraceImportError, import_otlp
 from ...spec.templates import all_templates
 from ..common import JSON, decode_cursor, encode_cursor, etag_for_version, log_activity, parse_if_match
@@ -78,6 +79,21 @@ async def import_spec(body: ImportIn, user: User, ctx: Ctx) -> dict[str, Any]:
         text, notes = import_otlp(body.traces, body.name)
     except TraceImportError as e:
         raise ApiError(422, "invalid_traces", str(e)) from None
+    return {"yaml": text, "notes": notes}
+
+
+class MeshIn(BaseModel):
+    yaml: str = Field(max_length=64 * 1024)
+    config: str = Field(max_length=160 * 1024)
+
+
+@router.post("/specs/import-istio")
+async def import_mesh(body: MeshIn, user: User, ctx: Ctx) -> dict[str, Any]:
+    await limit(ctx, "read", user.user_id)
+    try:
+        text, notes = import_istio(body.yaml, body.config)
+    except MeshImportError as e:
+        raise ApiError(422, "invalid_config", str(e)) from None
     return {"yaml": text, "notes": notes}
 
 
