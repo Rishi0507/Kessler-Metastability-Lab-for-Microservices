@@ -40,7 +40,7 @@ A short trigger becomes a state the system cannot leave by itself, a **metastabl
 
 ## What it does
 
-1. **Describe** your services in a short `kessler.yaml`: instances, worker pools, queues, latency distributions, per-call timeouts, retries and jitter, retry budgets, circuit breakers, deadline propagation, caches, contention and autoscaling. The editor lints as you type, offers a one-click fix for each finding and grades the spec's resilience.
+1. **Describe** your services in a form or in a short `kessler.yaml`: instances, worker pools, queues, latency distributions, per-call timeouts, retries and jitter, retry budgets, circuit breakers, deadline propagation, caches, contention and autoscaling. The editor lints as you type, offers a one-click fix for each finding and grades the spec's resilience.
 2. **Sweep.** A deterministic C++ discrete-event simulator runs your system across load levels and trigger sizes (slowdowns, error bursts, outages, traffic spikes, cache flushes). It draws a **metastability map** with the tipping boundary and names the mechanism that keeps failures alive.
 3. **Fix and compare.** Kessler applies the recommended fixes as a new version and re-runs the *same* sweep with the same random seeds, so any difference comes from the change alone.
 4. **Watch it live.** A three.js view of your topology shows request particles: errors in red, retries in amber. You can break things, fix them mid-run, and see the system respond in under a second.
@@ -54,6 +54,10 @@ python scripts/import_traces.py traces.json --name "My shop" -o kessler.yaml
 ```
 
 Kessler reads the services, call graph, traffic, error rates and each service's own latency (time spent waiting on its calls is subtracted), and spots retries as repeated calls. Traces can't show your timeout settings, so the importer marks them `# guess`; set them from your client config before you trust a sweep.
+
+### Fill in timeouts and retries from Istio
+
+If you run Istio, click **Istio** above the editor and pick a file with your `VirtualService` and `DestinationRule` objects. Kessler copies route timeouts (or `perTryTimeout`), retries and load balancing onto the matching calls, and models outlier detection as a circuit breaker. A route without `retries` gets Istio's default of 2 retries, and Kessler tells you so. Connection pool limits are not modelled. Services match by the first part of the host name, so `db.shop.svc.cluster.local` maps to `db`.
 
 ## Architecture
 
