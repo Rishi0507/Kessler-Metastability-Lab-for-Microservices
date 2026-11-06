@@ -5,7 +5,17 @@ const COL_W = 128;
 const ROW_H = 74;
 const FIT_MAX_NODES = 14;
 
-export function Topology2D({ topo, findings }: { topo: Topology; findings: Finding[] }) {
+export function Topology2D({
+  topo,
+  findings,
+  selected = null,
+  onSelect,
+}: {
+  topo: Topology;
+  findings: Finding[];
+  selected?: string | null;
+  onSelect?: (id: string) => void;
+}) {
   const { layers } = layeredLayout(topo);
   const ids = layers.flat();
   const nLayers = layers.length;
@@ -63,8 +73,17 @@ export function Topology2D({ topo, findings }: { topo: Topology; findings: Findi
         const n = node.get(id);
         const u = n?.utilization ?? 0;
         const tone = id === "client" ? "" : u > 0.85 ? "hot" : u > 0.6 ? "warm" : "cool";
+        const pick = onSelect && id !== "client" ? () => onSelect(id) : undefined;
         return (
-          <g key={id}>
+          <g
+            key={id}
+            className={pick ? `pick${id === selected ? " sel" : ""}` : undefined}
+            onClick={pick}
+            onKeyDown={pick && ((e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), pick()))}
+            role={pick ? "button" : undefined}
+            tabIndex={pick ? 0 : undefined}
+            aria-label={pick ? `Edit ${id}` : undefined}
+          >
             <circle
               className={`n ${tone}${places.has(id) ? " risky" : ""}`}
               cx={p.x}

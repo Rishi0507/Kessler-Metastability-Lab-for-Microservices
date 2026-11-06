@@ -862,6 +862,126 @@ dialog.dialog::backdrop {
   color: var(--ink);
 }
 
+.visual {
+  display: grid;
+  gap: 24px;
+  padding: 16px;
+  max-height: min(68vh, 720px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.v-section {
+  display: grid;
+  gap: 12px;
+}
+.v-title {
+  font-size: var(--t-14);
+  font-weight: 600;
+}
+.v-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.v-grid .input,
+.v-grid .select {
+  min-width: 0;
+  width: 100%;
+}
+.v-wide {
+  grid-column: 1 / -1;
+}
+.v-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+}
+.v-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--t-14);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.v-check input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+.v-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.v-chip {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--rule-2);
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+.v-chip[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.v-service {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--radius-m);
+  background: var(--surface-2);
+}
+.v-call {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--rule);
+}
+.v-issues {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 14px;
+  list-style: none;
+  border-radius: 10px;
+  background: var(--meta-soft);
+  color: var(--meta);
+  font-size: 0.8125rem;
+}
+.v-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.v-danger {
+  color: var(--meta);
+}
+.topo2d .pick {
+  cursor: pointer;
+}
+.topo2d .pick:focus-visible {
+  outline: none;
+}
+.topo2d .pick:focus-visible .n,
+.topo2d .pick.sel .n {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
 .insight {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
