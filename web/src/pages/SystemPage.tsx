@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, Play, Save, Wrench } from "lucide-react";
+import { Activity, Play, Save, Upload, Wrench } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router";
 import { useSession } from "../app/session";
 import { toast, toastError, useRegisterCommands } from "../app/stores";
 import { SpecEditor, type SpecEditorHandle } from "../components/SpecEditor";
 import { Topology2D } from "../components/Topology2D";
+import { VisualEditor } from "../components/VisualEditor";
 import { TriggerDialog, type TriggerChoice } from "../components/TriggerDialog";
-import { Grade, InfoTip, SeverityDot, Skeleton, StatusDot, useTitle } from "../components/ui";
+import { Grade, InfoTip, Segmented, SeverityDot, Skeleton, StatusDot, useTitle } from "../components/ui";
 import { api, ApiError, newIdempotencyKey, request } from "../lib/api";
 import { fmtAgo, fmtPct } from "../lib/format";
 import type { Analysis, CheckResult, Finding, SystemDetail } from "../lib/types";
@@ -19,6 +20,17 @@ function useDebounced<T>(value: T, ms: number): T {
     return () => clearTimeout(t);
   }, [value, ms]);
   return v;
+}
+
+type EditorMode = "visual" | "yaml";
+const MODE_KEY = "kessler.editor";
+
+function loadMode(): EditorMode {
+  try {
+    return localStorage.getItem(MODE_KEY) === "yaml" ? "yaml" : "visual";
+  } catch {
+    return "visual";
+  }
 }
 
 function FindingsList({ findings, onApply, busy }: { findings: Finding[]; onApply: (f: Finding) => void; busy: boolean }) {
@@ -54,6 +66,15 @@ export default function SystemPage() {
   const editor = useRef<SpecEditorHandle>(null);
   const [draft, setDraft] = useState<string | null>(null);
   const [triggerOpen, setTriggerOpen] = useState(false);
+  const [mode, setModeState] = useState<EditorMode>(loadMode);
+  const [selected, setSelected] = useState<string | null>(null);
+  const setMode = useCallback((m: EditorMode) => {
+    setModeState(m);
+    try {
+      localStorage.setItem(MODE_KEY, m);
+    } catch {
+    }
+  }, []);
 
   const system = useQuery({
     queryKey: ["system", id],
@@ -114,6 +135,18 @@ export default function SystemPage() {
       toast(`Applied: ${(f.fix ?? f.title).replace(/\.$/, "")}. Save to keep it.`);
     },
     onError: (e) => toastError((e as Error).message),
+  });
+
+  const meshFile = useRef<HTMLInputElement>(null);
+  const importMesh = useMutation({
+    mutationFn: async (file: File) =>
+      api.post<{ yaml: string; notes: string[] }>("/api/v1/specs/import-istio", { yaml: current, config: await file.text() }),
+    onSuccess: (r) => {
+      editor.current?.setValue(r.yaml);
+      setDraft(r.yaml);
+      toast(["Imported Istio settings. Save to keep them.", ...r.notes.slice(0, 3)].join(" "));
+    },
+    onError: (e) => toastError((e as ApiError).detail ?? (e as Error).message),
   });
 
   const startAnalysis = useMutation({
@@ -225,21 +258,57 @@ export default function SystemPage() {
       <div className="workspace">
         <div className="editor-frame">
           <div className="editor-bar">
-            <span className="code">kessler.yaml</span>
+            <Segmented
+              label="Editor"
+              value={mode}
+              onChange={setMode}
+              options={[
+                { value: "visual", label: "Form" },
+                { value: "yaml", label: "YAML" },
+              ]}
+            />
             <span className="faint">v{s?.latest_version ?? " - "}</span>
             {dirty && <span style={{ color: "var(--slow)" }}>unsaved</span>}
             {issues.length > 0 && <span style={{ color: "var(--meta)" }}>{issues.length} error{issues.length > 1 ? "s" : ""}</span>}
             <div className="spacer" />
+            <input
+              ref={meshFile}
+              type="file"
+              accept=".yaml,.yml,.json"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) importMesh.mutate(f);
+              }}
+            />
+            <button
+              className="btn btn-sm btn-ghost"
+              disabled={!s || issues.length > 0 || importMesh.isPending}
+              onClick={() => meshFile.current?.click()}
+              title="Read timeouts, retries, outlier detection and load balancing from Istio VirtualService and DestinationRule files"
+            >
+              <Upload size={14} /> Istio
+            </button>
             <button className="btn btn-sm" disabled={!dirty || save.isPending || issues.length > 0} onClick={() => save.mutate()}>
               <Save size={14} /> Save
             </button>
           </div>
-          {s ? (
-            <SpecEditor ref={editor} value={saved} onChange={setDraft} issues={issues} label="System spec (YAML)" />
-          ) : (
+          {!s ? (
             <div style={{ padding: 16 }}>
               <Skeleton h={480} />
             </div>
+          ) : mode === "visual" ? (
+            <VisualEditor
+              text={current}
+              onChange={setDraft}
+              issues={issues}
+              selected={selected}
+              onSelect={setSelected}
+              onOpenYaml={() => setMode("yaml")}
+            />
+          ) : (
+            <SpecEditor ref={editor} value={current} onChange={setDraft} issues={issues} label="System spec (YAML)" />
           )}
         </div>
 
@@ -266,7 +335,15 @@ export default function SystemPage() {
                 <h2 className="section-title">Call graph</h2>
                 <InfoTip>Ring colour shows how busy each service is at today's traffic. Dashed red lines are risky calls.</InfoTip>
               </div>
-              <Topology2D topo={topo} findings={findings} />
+              <Topology2D
+                topo={topo}
+                findings={findings}
+                selected={mode === "visual" ? selected : null}
+                onSelect={(n) => {
+                  setSelected(n);
+                  setMode("visual");
+                }}
+              />
             </div>
           )}
           <div className="panel panel-pad">
